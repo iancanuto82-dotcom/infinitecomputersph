@@ -1,0 +1,24 @@
+<svg width="320" height="220" viewBox="0 0 320 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="mbTop" x1="60" y1="42" x2="213" y2="130" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F172A"/>
+      <stop offset="1" stop-color="#334155"/>
+    </linearGradient>
+    <linearGradient id="mbFace" x1="60" y1="130" x2="213" y2="172" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1E293B"/>
+      <stop offset="1" stop-color="#475569"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="158" cy="190" rx="98" ry="14" fill="#0F172A" fill-opacity="0.18"/>
+  <polygon points="60,42 213,42 246,72 93,72" fill="url(#mbTop)"/>
+  <polygon points="60,130 213,130 246,160 93,160" fill="url(#mbFace)"/>
+  <polygon points="60,42 93,72 93,160 60,130" fill="#0B1220"/>
+  <polygon points="213,42 246,72 246,160 213,130" fill="#1F2937"/>
+  <rect x="108" y="88" width="74" height="50" rx="5" fill="#111827"/>
+  <rect x="121" y="98" width="42" height="30" rx="3" fill="#334155"/>
+  <rect x="188" y="88" width="32" height="16" rx="2" fill="#64748B"/>
+  <rect x="188" y="108" width="32" height="12" rx="2" fill="#475569"/>
+  <rect x="188" y="124" width="32" height="14" rx="2" fill="#64748B"/>
+  <rect x="70" y="86" width="16" height="52" rx="3" fill="#94A3B8"/>
+  <rect x="96" y="146" width="120" height="7" rx="2" fill="#0F172A"/>
+</svg>

@@ -1,0 +1,22 @@
+<svg width="320" height="220" viewBox="0 0 320 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="lapScreen" x1="96" y1="48" x2="214" y2="130" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1F2937"/>
+      <stop offset="1" stop-color="#0F172A"/>
+    </linearGradient>
+    <linearGradient id="lapBody" x1="78" y1="136" x2="238" y2="164" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#475569"/>
+      <stop offset="1" stop-color="#1F2937"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="160" cy="190" rx="92" ry="13" fill="#0F172A" fill-opacity="0.16"/>
+  <polygon points="96,48 214,48 236,66 118,66" fill="#4B5563"/>
+  <polygon points="96,130 214,130 236,148 118,148" fill="#334155"/>
+  <polygon points="96,48 118,66 118,148 96,130" fill="#1F2937"/>
+  <polygon points="214,48 236,66 236,148 214,130" fill="#111827"/>
+  <rect x="116" y="66" width="95" height="73" rx="6" fill="url(#lapScreen)"/>
+  <rect x="124" y="75" width="78" height="54" rx="5" fill="#0B1220"/>
+  <polygon points="78,136 238,136 262,158 102,158" fill="url(#lapBody)"/>
+  <polygon points="102,158 262,158 248,166 88,166" fill="#0F172A"/>
+  <rect x="154" y="144" width="24" height="3" rx="1" fill="#94A3B8"/>
+</svg>

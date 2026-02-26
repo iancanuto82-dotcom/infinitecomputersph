@@ -1,0 +1,21 @@
+<svg width="320" height="220" viewBox="0 0 320 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="monFrame" x1="78" y1="44" x2="230" y2="146" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#374151"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="monScreen" x1="94" y1="56" x2="210" y2="138" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#60A5FA"/>
+      <stop offset="1" stop-color="#1E3A8A"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="160" cy="190" rx="92" ry="13" fill="#0F172A" fill-opacity="0.16"/>
+  <polygon points="78,44 230,44 248,58 96,58" fill="#4B5563"/>
+  <polygon points="78,146 230,146 248,160 96,160" fill="url(#monFrame)"/>
+  <polygon points="78,44 96,58 96,160 78,146" fill="#1F2937"/>
+  <polygon points="230,44 248,58 248,160 230,146" fill="#6B7280"/>
+  <rect x="95" y="58" width="134" height="90" rx="8" fill="#0B1220"/>
+  <rect x="101" y="64" width="122" height="76" rx="6" fill="url(#monScreen)"/>
+  <rect x="149" y="160" width="20" height="15" rx="2" fill="#334155"/>
+  <polygon points="126,182 192,182 203,188 115,188" fill="#1F2937"/>
+</svg>

@@ -1,0 +1,18 @@
+<svg width="320" height="220" viewBox="0 0 320 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="psuTop" x1="92" y1="54" x2="194" y2="112" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#374151"/>
+      <stop offset="1" stop-color="#1F2937"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="160" cy="190" rx="86" ry="13" fill="#0F172A" fill-opacity="0.16"/>
+  <polygon points="92,54 194,54 228,80 126,80" fill="url(#psuTop)"/>
+  <polygon points="92,138 194,138 228,164 126,164" fill="#1F2937"/>
+  <polygon points="92,54 126,80 126,164 92,138" fill="#111827"/>
+  <polygon points="194,54 228,80 228,164 194,138" fill="#4B5563"/>
+  <circle cx="154" cy="113" r="30" fill="#0B1220"/>
+  <circle cx="154" cy="113" r="21" fill="#334155"/>
+  <circle cx="154" cy="113" r="6" fill="#CBD5E1"/>
+  <path d="M154 92v42M133 113h42M140 99l28 28M168 99l-28 28" stroke="#94A3B8" stroke-width="2" stroke-linecap="round"/>
+  <rect x="200" y="110" width="15" height="26" rx="2" fill="#94A3B8"/>
+</svg>

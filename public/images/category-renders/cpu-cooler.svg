@@ -1,0 +1,25 @@
+<svg width="320" height="220" viewBox="0 0 320 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="coolerTop" x1="90" y1="52" x2="206" y2="126" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#334155"/>
+      <stop offset="1" stop-color="#0F172A"/>
+    </linearGradient>
+    <linearGradient id="coolerFront" x1="90" y1="126" x2="206" y2="166" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1F2937"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="160" cy="190" rx="88" ry="13" fill="#0F172A" fill-opacity="0.16"/>
+  <polygon points="90,52 206,52 230,70 114,70" fill="url(#coolerTop)"/>
+  <polygon points="90,126 206,126 230,144 114,144" fill="url(#coolerFront)"/>
+  <polygon points="90,52 114,70 114,144 90,126" fill="#0B1220"/>
+  <polygon points="206,52 230,70 230,144 206,126" fill="#475569"/>
+  <rect x="112" y="70" width="95" height="74" rx="8" fill="#0F172A"/>
+  <circle cx="159" cy="107" r="24" fill="#1E293B"/>
+  <circle cx="159" cy="107" r="18" fill="#334155"/>
+  <path d="M159 91c6 0 8 6 6 10-2 4-6 6-10 4-4-2-6-6-4-10 1-3 4-4 8-4z" fill="#F59E0B"/>
+  <path d="M175 107c0 6-6 8-10 6-4-2-6-6-4-10 2-4 6-6 10-4 3 1 4 4 4 8z" fill="#F59E0B"/>
+  <path d="M159 123c-6 0-8-6-6-10 2-4 6-6 10-4 4 2 6 6 4 10-1 3-4 4-8 4z" fill="#F59E0B"/>
+  <path d="M143 107c0-6 6-8 10-6 4 2 6 6 4 10-2 4-6 6-10 4-3-1-4-4-4-8z" fill="#F59E0B"/>
+  <circle cx="159" cy="107" r="4" fill="#E2E8F0"/>
+</svg>

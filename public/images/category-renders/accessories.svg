@@ -1,0 +1,18 @@
+<svg width="320" height="220" viewBox="0 0 320 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="accBox" x1="82" y1="60" x2="232" y2="150" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#334155"/>
+      <stop offset="1" stop-color="#1F2937"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="160" cy="190" rx="92" ry="13" fill="#0F172A" fill-opacity="0.15"/>
+  <polygon points="82,60 232,60 252,76 102,76" fill="#475569"/>
+  <polygon points="82,136 232,136 252,152 102,152" fill="url(#accBox)"/>
+  <polygon points="82,60 102,76 102,152 82,136" fill="#111827"/>
+  <polygon points="232,60 252,76 252,152 232,136" fill="#64748B"/>
+  <rect x="104" y="78" width="126" height="56" rx="8" fill="#0F172A"/>
+  <rect x="116" y="90" width="26" height="26" rx="4" fill="#22D3EE"/>
+  <rect x="146" y="90" width="26" height="26" rx="4" fill="#A78BFA"/>
+  <rect x="176" y="90" width="26" height="26" rx="4" fill="#F59E0B"/>
+  <rect x="206" y="90" width="16" height="26" rx="4" fill="#34D399"/>
+</svg>

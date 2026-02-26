@@ -1,0 +1,22 @@
+<svg width="320" height="220" viewBox="0 0 320 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="caseBody" x1="96" y1="36" x2="201" y2="168" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1F2937"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="caseGlass" x1="114" y1="56" x2="178" y2="144" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#94A3B8" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#475569" stop-opacity="0.2"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="160" cy="192" rx="90" ry="13" fill="#0F172A" fill-opacity="0.18"/>
+  <polygon points="96,36 201,36 228,56 123,56" fill="#374151"/>
+  <polygon points="96,168 201,168 228,188 123,188" fill="#1F2937"/>
+  <polygon points="96,36 123,56 123,188 96,168" fill="#0F172A"/>
+  <polygon points="201,36 228,56 228,188 201,168" fill="#4B5563"/>
+  <rect x="114" y="56" width="79" height="104" rx="7" fill="url(#caseBody)"/>
+  <rect x="120" y="64" width="64" height="85" rx="6" fill="url(#caseGlass)"/>
+  <circle cx="126" cy="156" r="3" fill="#94A3B8"/>
+  <rect x="98" y="188" width="26" height="8" rx="2" fill="#1F2937"/>
+  <rect x="198" y="188" width="26" height="8" rx="2" fill="#1F2937"/>
+</svg>

@@ -1,0 +1,25 @@
+<svg width="320" height="220" viewBox="0 0 320 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gpuTop" x1="46" y1="72" x2="237" y2="72" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#111827"/>
+      <stop offset="1" stop-color="#374151"/>
+    </linearGradient>
+    <linearGradient id="gpuSide" x1="237" y1="72" x2="262" y2="147" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4B5563"/>
+      <stop offset="1" stop-color="#1F2937"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="156" cy="188" rx="102" ry="14" fill="#0F172A" fill-opacity="0.16"/>
+  <rect x="46" y="72" width="191" height="74" rx="10" fill="url(#gpuTop)"/>
+  <polygon points="237,72 262,90 262,164 237,146" fill="url(#gpuSide)"/>
+  <rect x="58" y="84" width="56" height="50" rx="7" fill="#0F172A"/>
+  <rect x="118" y="84" width="56" height="50" rx="7" fill="#0F172A"/>
+  <rect x="178" y="84" width="46" height="50" rx="7" fill="#0F172A"/>
+  <circle cx="86" cy="109" r="17" fill="#475569"/>
+  <circle cx="146" cy="109" r="17" fill="#475569"/>
+  <circle cx="201" cy="109" r="14" fill="#475569"/>
+  <circle cx="86" cy="109" r="7" fill="#CBD5E1"/>
+  <circle cx="146" cy="109" r="7" fill="#CBD5E1"/>
+  <circle cx="201" cy="109" r="6" fill="#CBD5E1"/>
+  <rect x="66" y="148" width="142" height="7" rx="2" fill="#94A3B8"/>
+</svg>

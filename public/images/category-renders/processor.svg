@@ -1,0 +1,33 @@
+<svg width="320" height="220" viewBox="0 0 320 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cpuTop" x1="65" y1="45" x2="205" y2="145" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FAFC"/>
+      <stop offset="1" stop-color="#E2E8F0"/>
+    </linearGradient>
+    <linearGradient id="cpuSide" x1="205" y1="45" x2="245" y2="145" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#CBD5E1"/>
+      <stop offset="1" stop-color="#94A3B8"/>
+    </linearGradient>
+    <linearGradient id="cpuFront" x1="65" y1="145" x2="205" y2="178" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C7D2FE"/>
+      <stop offset="1" stop-color="#A5B4FC"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="160" cy="190" rx="94" ry="14" fill="#0F172A" fill-opacity="0.16"/>
+  <polygon points="65,45 205,45 245,78 105,78" fill="url(#cpuTop)"/>
+  <polygon points="205,45 245,78 245,178 205,145" fill="url(#cpuSide)"/>
+  <polygon points="65,45 105,78 105,178 65,145" fill="#E2E8F0"/>
+  <polygon points="65,145 205,145 245,178 105,178" fill="url(#cpuFront)"/>
+  <rect x="118" y="95" width="74" height="52" rx="8" fill="#334155"/>
+  <rect x="126" y="102" width="58" height="38" rx="5" fill="#0F172A"/>
+  <g fill="#64748B">
+    <rect x="56" y="90" width="9" height="4" rx="1"/>
+    <rect x="56" y="106" width="9" height="4" rx="1"/>
+    <rect x="56" y="122" width="9" height="4" rx="1"/>
+    <rect x="56" y="138" width="9" height="4" rx="1"/>
+    <rect x="245" y="90" width="9" height="4" rx="1"/>
+    <rect x="245" y="106" width="9" height="4" rx="1"/>
+    <rect x="245" y="122" width="9" height="4" rx="1"/>
+    <rect x="245" y="138" width="9" height="4" rx="1"/>
+  </g>
+</svg>

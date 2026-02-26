@@ -1,0 +1,32 @@
+<svg width="320" height="220" viewBox="0 0 320 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="kbdTop" x1="58" y1="96" x2="244" y2="120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1F2937"/>
+      <stop offset="1" stop-color="#374151"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="160" cy="190" rx="98" ry="13" fill="#0F172A" fill-opacity="0.16"/>
+  <polygon points="58,96 244,96 262,110 76,110" fill="#4B5563"/>
+  <polygon points="58,136 244,136 262,150 76,150" fill="url(#kbdTop)"/>
+  <polygon points="58,96 76,110 76,150 58,136" fill="#111827"/>
+  <polygon points="244,96 262,110 262,150 244,136" fill="#6B7280"/>
+  <rect x="74" y="112" width="168" height="26" rx="5" fill="#0F172A"/>
+  <g fill="#94A3B8">
+    <rect x="80" y="117" width="11" height="6" rx="2"/>
+    <rect x="94" y="117" width="11" height="6" rx="2"/>
+    <rect x="108" y="117" width="11" height="6" rx="2"/>
+    <rect x="122" y="117" width="11" height="6" rx="2"/>
+    <rect x="136" y="117" width="11" height="6" rx="2"/>
+    <rect x="150" y="117" width="11" height="6" rx="2"/>
+    <rect x="164" y="117" width="11" height="6" rx="2"/>
+    <rect x="178" y="117" width="11" height="6" rx="2"/>
+    <rect x="192" y="117" width="11" height="6" rx="2"/>
+    <rect x="206" y="117" width="11" height="6" rx="2"/>
+    <rect x="220" y="117" width="16" height="6" rx="2"/>
+    <rect x="80" y="126" width="20" height="6" rx="2"/>
+    <rect x="103" y="126" width="42" height="6" rx="2"/>
+    <rect x="148" y="126" width="38" height="6" rx="2"/>
+    <rect x="189" y="126" width="20" height="6" rx="2"/>
+    <rect x="212" y="126" width="24" height="6" rx="2"/>
+  </g>
+</svg>
