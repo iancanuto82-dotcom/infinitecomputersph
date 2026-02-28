@@ -8,6 +8,7 @@
     @php($subcategoriesByParent = $allCategories->filter(fn ($category) => ($category->parent_id ?? null) !== null)->groupBy(fn ($category) => (int) $category->parent_id))
     @php($mainCategoryIds = $mainCategoryOptions->pluck('id')->map(fn ($id) => (int) $id)->all())
     @php($orphanSubcategoryOptions = $allCategories->filter(fn ($category) => ($category->parent_id ?? null) !== null && ! in_array((int) $category->parent_id, $mainCategoryIds, true))->values())
+    @php($stockToneClass = fn ($stock) => (int) $stock <= 0 ? 'text-rose-600 font-semibold' : ((int) $stock <= 3 ? 'text-amber-600 font-semibold' : 'text-emerald-600 font-semibold'))
 
     <x-slot name="header">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -20,14 +21,18 @@
                 <div class="flex flex-col gap-2 sm:items-end">
                     <div class="flex flex-wrap items-center gap-2 sm:justify-end">
                         <form method="POST" action="{{ route('admin.products.import', $indexQuery) }}" enctype="multipart/form-data"
-                            class="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+                            class="flex flex-wrap items-center gap-2 sm:flex-nowrap"
+                            data-confirm-modal="true"
+                            data-confirm-title="Import products"
+                            data-confirm-message="Import this CSV/XLSX file? Matching products will be updated and new products will be created."
+                            data-confirm-accept="Import">
                             @csrf
                             <div class="flex items-center gap-2 rounded-md bg-white px-2 py-1 ring-1 ring-inset ring-black/15">
                                 <label for="product_import_file"
                                     class="inline-flex cursor-pointer items-center rounded-md bg-gray-50 px-3 py-2 text-sm font-medium text-gray-900 hover:bg-orange-100/60">
                                     Choose file
                                 </label>
-                                <input id="product_import_file" type="file" name="file" accept=".csv,.xlsx" class="sr-only">
+                                <input id="product_import_file" type="file" name="file" accept=".csv,.xlsx" class="sr-only" required>
                                 <span id="product_import_file_name" class="max-w-[180px] truncate text-sm text-gray-600 sm:max-w-[220px]">No file selected</span>
                             </div>
                             <button type="submit"
@@ -35,6 +40,21 @@
                                 Import CSV/XLSX
                             </button>
                         </form>
+
+                        @if (!empty($latestImportRevertLog))
+                            <form method="POST" action="{{ route('admin.products.import.revert', $indexQuery) }}"
+                                data-confirm-modal="true"
+                                data-confirm-title="Revert imported products"
+                                data-confirm-message="Revert your latest imported product changes? This removes newly created products and restores previous values for updated products."
+                                data-confirm-accept="Revert">
+                                @csrf
+                                <input type="hidden" name="audit_log_id" value="{{ (int) $latestImportRevertLog->id }}">
+                                <button type="submit"
+                                    class="inline-flex items-center rounded-md bg-rose-700 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2">
+                                    Undo last import
+                                </button>
+                            </form>
+                        @endif
 
                         <a href="{{ route('admin.products.create', $indexQuery) }}"
                             class="inline-flex items-center rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
@@ -183,7 +203,7 @@
                                                                 &middot; New average: <span class="font-medium text-gray-900">&#8369;{{ number_format((float) ($costCalc['result_cost'] ?? 0), 2) }}</span>
                                                             </div>
                                                             <div class="mt-1">
-                                                                Stock: {{ (int) ($costCalc['old_stock'] ?? 0) }} + {{ (int) ($costCalc['incoming_stock'] ?? 0) }} = <span class="font-medium text-gray-900">{{ (int) ($costCalc['new_stock'] ?? 0) }}</span>
+                                                                Stock: {{ (int) ($costCalc['old_stock'] ?? 0) }} + {{ (int) ($costCalc['incoming_stock'] ?? 0) }} = <span class="font-medium {{ $stockToneClass((int) ($costCalc['new_stock'] ?? 0)) }}">{{ (int) ($costCalc['new_stock'] ?? 0) }}</span>
                                                                 @if (!empty($costCalc['at']))
                                                                     &middot; {{ $costCalc['at'] }}
                                                                 @endif
@@ -218,7 +238,7 @@
                                             {{ number_format((int) $product->initial_stock) }}
                                         </td>
                                     @endif
-                                    <td class="px-6 py-4 text-right text-gray-900 tabular-nums">
+                                    <td class="px-6 py-4 text-right tabular-nums {{ $stockToneClass((int) $product->stock) }}">
                                         {{ number_format((int) $product->stock) }}
                                     </td>
                                     <td class="px-6 py-4 text-gray-900/80">

@@ -44,10 +44,10 @@
     @endphp
 
     <body class="font-sans antialiased">
-        <div class="{{ $useSidebarNav ? 'h-screen overflow-hidden bg-gray-50 text-gray-900 flex' : 'min-h-screen bg-gray-100' }}">
+        <div class="{{ $useSidebarNav ? 'min-h-screen bg-gray-50 text-gray-900 flex' : 'min-h-screen bg-gray-100' }}">
             @include('layouts.navigation')
 
-            <div class="{{ $useSidebarNav ? 'flex-1 min-w-0 h-screen overflow-y-auto overflow-x-hidden' : '' }}">
+            <div class="{{ $useSidebarNav ? 'flex-1 min-w-0 overflow-x-hidden' : '' }}">
                 <!-- Page Heading -->
                 @isset($header)
                     <header class="bg-white shadow">
@@ -143,6 +143,7 @@
                 if (!modal || !titleEl || !messageEl || !cancelBtn || !acceptBtn) return;
 
                 let pendingForm = null;
+                const defaultAcceptLabel = (acceptBtn.textContent || '').trim() || 'Confirm';
 
                 const closeModal = () => {
                     modal.classList.add('hidden');
@@ -154,6 +155,7 @@
                     pendingForm = form;
                     titleEl.textContent = form.dataset.confirmTitle || 'Confirm action';
                     messageEl.textContent = form.dataset.confirmMessage || 'Are you sure you want to continue?';
+                    acceptBtn.textContent = form.dataset.confirmAccept || defaultAcceptLabel;
                     modal.classList.remove('hidden');
                     modal.classList.add('flex');
                     acceptBtn.focus();

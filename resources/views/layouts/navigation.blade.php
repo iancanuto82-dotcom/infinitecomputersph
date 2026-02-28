@@ -14,6 +14,8 @@
     if ($isAdminUser && \App\Support\AdminAccess::hasPermission($user, 'sales.view')) {
         $adminLinks[] = ['href' => route('admin.sales'), 'active' => request()->routeIs('admin.sales*'), 'label' => __('Sales')];
         $adminLinks[] = ['href' => route('admin.expenses'), 'active' => request()->routeIs('admin.expenses*'), 'label' => __('Expenses')];
+        $adminLinks[] = ['href' => route('admin.replacements.index'), 'active' => request()->routeIs('admin.replacements.index'), 'label' => __('Replacements')];
+        $adminLinks[] = ['href' => route('admin.replacements.inventory'), 'active' => request()->routeIs('admin.replacements.inventory'), 'label' => __('RMA Inventory')];
     }
 
     if ($isAdminUser && \App\Support\AdminAccess::hasPermission($user, 'sales.edit')) {
@@ -57,6 +59,8 @@
             'Dashboard' => 'dashboard',
             'Sales' => 'sales',
             'Expenses' => 'expenses',
+            'Replacements' => 'replacements',
+            'RMA Inventory' => 'rma_inventory',
             'Create Sale' => 'create_sale',
             'PC Builder' => 'pc_builder',
             'Products' => 'products',
@@ -80,11 +84,11 @@
         x-init="collapsed = isTouch ? false : true"
         @mouseenter="expandSidebar()"
         @mouseleave="collapseSidebar()"
-        class="relative shrink-0 overflow-hidden border-r border-slate-200 bg-white transition-[width] duration-300 ease-out"
+        class="sticky top-0 self-start relative h-screen shrink-0 overflow-hidden border-r border-slate-200 bg-white transition-[width] duration-300 ease-out"
         :class="collapsed ? 'w-[4.75rem]' : 'w-[16.5rem]'">
-        <aside class="sticky top-0 flex h-screen min-h-screen flex-col bg-white text-slate-700 transition-all duration-200">
-            <div class="border-b border-slate-200 px-3 py-4">
-                <a href="{{ $dashboardHref }}" class="flex items-center gap-3 rounded-xl bg-slate-50 px-2.5 py-2.5 ring-1 ring-slate-200" :class="collapsed ? 'justify-center' : ''">
+        <aside class="flex h-full flex-col bg-white text-slate-700 transition-all duration-200">
+            <div class="border-b border-slate-200 py-4" :class="collapsed ? 'px-2' : 'px-3'">
+                <a href="{{ $dashboardHref }}" class="flex items-center gap-3 rounded-xl bg-slate-50 ring-1 ring-slate-200" :class="collapsed ? 'w-full justify-center px-2 py-2' : 'px-2.5 py-2.5'">
                     <img src="https://i.imgur.com/x0GIl1C.png" alt="{{ config('app.name') }} logo"
                         class="h-9 w-9 shrink-0 object-contain"
                         loading="lazy"
@@ -137,6 +141,12 @@
                                         @break
                                     @case('expenses')
                                         <svg class="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 7H4m16 0l-1.2 12a2 2 0 01-2 1.8H7.2a2 2 0 01-2-1.8L4 7m4-3h8a2 2 0 012 2v1H6V6a2 2 0 012-2z" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                        @break
+                                    @case('replacements')
+                                        <svg class="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 7V3m8 4V3M4 11h16M5 6h14a2 2 0 012 2v11a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2zm3 7l2 2 4-4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                        @break
+                                    @case('rma_inventory')
+                                        <svg class="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 7h16M4 12h16M4 17h16M9 4v16m6-16v16" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                         @break
                                     @case('create_sale')
                                         <svg class="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>

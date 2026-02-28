@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\Request;
@@ -59,8 +60,9 @@ class ProductController extends Controller
             ->withQueryString();
 
         $costCalculations = (array) $request->session()->get('product_cost_calculations', []);
+        $latestImportRevertLog = $this->latestRevertableImportLog((int) ($request->user()?->id ?? 0));
 
-        return view('admin.products.index', compact('products', 'categories', 'search', 'categoryId', 'stockFilter', 'costCalculations'));
+        return view('admin.products.index', compact('products', 'categories', 'search', 'categoryId', 'stockFilter', 'costCalculations', 'latestImportRevertLog'));
     }
 
     public function create(Request $request)
@@ -236,6 +238,18 @@ class ProductController extends Controller
         $name = (string) $product->name;
         $categoryId = (int) $product->category_id;
         $stock = (int) $product->stock;
+        $deletedSnapshot = $product->only([
+            'name',
+            'description',
+            'image_path',
+            'image_url',
+            'price',
+            'cost_price',
+            'initial_stock',
+            'stock',
+            'category_id',
+            'is_active',
+        ]);
 
         if ($product->image_path) {
             Storage::disk('public')->delete($product->image_path);
@@ -253,6 +267,7 @@ class ProductController extends Controller
             [
                 'category_id' => $categoryId,
                 'stock' => $stock,
+                'deleted_snapshot' => $deletedSnapshot,
             ]
         );
 
@@ -282,6 +297,18 @@ class ProductController extends Controller
             $name = (string) $product->name;
             $categoryId = (int) $product->category_id;
             $stock = (int) $product->stock;
+            $deletedSnapshot = $product->only([
+                'name',
+                'description',
+                'image_path',
+                'image_url',
+                'price',
+                'cost_price',
+                'initial_stock',
+                'stock',
+                'category_id',
+                'is_active',
+            ]);
 
             if ($product->image_path) {
                 Storage::disk('public')->delete($product->image_path);
@@ -300,6 +327,7 @@ class ProductController extends Controller
                     'category_id' => $categoryId,
                     'stock' => $stock,
                     'bulk' => true,
+                    'deleted_snapshot' => $deletedSnapshot,
                 ]
             );
 
@@ -356,8 +384,10 @@ class ProductController extends Controller
         $updated = 0;
         $skipped = 0;
         $calculationUpdates = [];
+        $revertCreatedProductIds = [];
+        $revertUpdatedProducts = [];
 
-        DB::transaction(function () use ($rows, $columnMap, &$created, &$updated, &$skipped, &$calculationUpdates) {
+        DB::transaction(function () use ($rows, $columnMap, &$created, &$updated, &$skipped, &$calculationUpdates, &$revertCreatedProductIds, &$revertUpdatedProducts) {
             foreach ($rows as $row) {
                 $name = trim((string) ($row[$columnMap['name']] ?? ''));
                 $categoryName = array_key_exists('category', $columnMap)
@@ -416,6 +446,7 @@ class ProductController extends Controller
                 ];
 
                 if ($product) {
+                    $before = $product->only(['price', 'cost_price', 'initial_stock', 'stock']);
                     $incomingStock = max(0, $stock);
                     $currentStock = max(0, (int) $product->stock);
                     $currentInitialStock = max(0, (int) ($product->initial_stock ?? 0));
@@ -463,15 +494,20 @@ class ProductController extends Controller
                     }
 
                     $product->update($payload);
+                    $revertUpdatedProducts[] = [
+                        'id' => (int) $product->id,
+                        'before' => $before,
+                    ];
                     $updated++;
                 } else {
-                    Product::create([
+                    $createdProduct = Product::create([
                         'name' => $name,
                         'category_id' => $category->id,
                         'is_active' => true,
                         'initial_stock' => max(0, $stock),
                         ...$payload,
                     ]);
+                    $revertCreatedProductIds[] = (int) $createdProduct->id;
                     $created++;
                 }
             }
@@ -493,6 +529,10 @@ class ProductController extends Controller
                 'updated' => $updated,
                 'skipped' => $skipped,
                 'file_name' => (string) ($request->file('file')?->getClientOriginalName() ?? ''),
+                'revert' => [
+                    'created_product_ids' => array_values(array_unique(array_map(fn ($id) => (int) $id, $revertCreatedProductIds))),
+                    'updated_products' => $revertUpdatedProducts,
+                ],
             ]
         );
 
@@ -501,6 +541,146 @@ class ProductController extends Controller
         return redirect()
             ->route('admin.products.index', $this->productIndexQuery($request))
             ->with('status', "Import complete: {$created} created, {$updated} updated, {$skipped} skipped.");
+    }
+
+    public function revertImport(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'audit_log_id' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $userId = (int) ($request->user()?->id ?? 0);
+        if ($userId <= 0) {
+            return back()->with('error', 'Unable to verify your account for import revert.');
+        }
+
+        $importLog = AuditLog::query()
+            ->whereKey((int) $validated['audit_log_id'])
+            ->where('action', 'imported')
+            ->where('target_type', 'product')
+            ->where('user_id', $userId)
+            ->first();
+
+        if (! $importLog) {
+            return back()->with('error', 'Import history record was not found.');
+        }
+
+        $meta = (array) ($importLog->meta ?? []);
+        if (isset($meta['reverted_at']) && trim((string) $meta['reverted_at']) !== '') {
+            return back()->with('error', 'This import has already been reverted.');
+        }
+
+        $revertData = $this->extractImportRevertData($meta);
+        if ($revertData === null) {
+            return back()->with('error', 'Missing revert metadata for this import.');
+        }
+
+        $deletedCreated = 0;
+        $missingCreated = 0;
+        $restoredUpdated = 0;
+        $missingUpdated = 0;
+
+        try {
+            DB::transaction(function () use (
+                $request,
+                $importLog,
+                $meta,
+                $revertData,
+                &$deletedCreated,
+                &$missingCreated,
+                &$restoredUpdated,
+                &$missingUpdated
+            ): void {
+                $createdProductIds = $revertData['created_product_ids'];
+                if ($createdProductIds !== []) {
+                    $createdProducts = Product::query()
+                        ->whereIn('id', $createdProductIds)
+                        ->get()
+                        ->keyBy('id');
+
+                    foreach ($createdProductIds as $productId) {
+                        $createdProduct = $createdProducts->get($productId);
+                        if (! $createdProduct) {
+                            $missingCreated++;
+                            continue;
+                        }
+
+                        $createdProduct->delete();
+                        $deletedCreated++;
+                    }
+                }
+
+                $updatedProducts = $revertData['updated_products'];
+                foreach ($updatedProducts as $row) {
+                    $productId = (int) ($row['id'] ?? 0);
+                    $before = is_array($row['before'] ?? null) ? (array) $row['before'] : [];
+                    if ($productId <= 0 || $before === []) {
+                        $missingUpdated++;
+                        continue;
+                    }
+
+                    $product = Product::query()->find($productId);
+                    if (! $product) {
+                        $missingUpdated++;
+                        continue;
+                    }
+
+                    $payload = $this->normalizeImportedProductBeforePayload($before);
+                    if ($payload === []) {
+                        $missingUpdated++;
+                        continue;
+                    }
+
+                    $product->update($payload);
+                    $restoredUpdated++;
+                }
+
+                if ($deletedCreated === 0 && $restoredUpdated === 0) {
+                    throw new \RuntimeException('No imported products were reverted. Records may already be gone.');
+                }
+
+                $updatedMeta = $meta;
+                $updatedMeta['reverted_at'] = now()->toIso8601String();
+                $updatedMeta['reverted_by'] = (int) ($request->user()?->id ?? 0);
+                $updatedMeta['revert_details'] = [
+                    'deleted_created_products' => $deletedCreated,
+                    'restored_updated_products' => $restoredUpdated,
+                    'missing_created_products' => $missingCreated,
+                    'missing_updated_products' => $missingUpdated,
+                ];
+                $importLog->meta = $updatedMeta;
+                $importLog->save();
+
+                AuditLogger::record(
+                    $request,
+                    'reverted',
+                    'product',
+                    null,
+                    null,
+                    sprintf('Reverted product import from history log #%d.', (int) $importLog->id),
+                    [
+                        'source_audit_log_id' => (int) $importLog->id,
+                        'source_action' => 'imported',
+                        'source_target_type' => 'product',
+                        'details' => $updatedMeta['revert_details'],
+                    ]
+                );
+            });
+        } catch (\RuntimeException $exception) {
+            return back()->with('error', $exception->getMessage());
+        } catch (\Throwable) {
+            return back()->with('error', 'Unable to revert imported changes.');
+        }
+
+        $this->forgetPublicCatalogCaches();
+
+        return redirect()
+            ->route('admin.products.index', $this->productIndexQuery($request))
+            ->with(
+                'status',
+                "Import reverted: {$deletedCreated} created removed, {$restoredUpdated} updated restored."
+                ." ({$missingCreated} created already missing, {$missingUpdated} updated missing.)"
+            );
     }
 
     private function forgetPublicCatalogCaches(): void
@@ -568,6 +748,114 @@ class ProductController extends Controller
         }
 
         return $map;
+    }
+
+    /**
+     * @param array<string, mixed> $meta
+     * @return array{created_product_ids: array<int, int>, updated_products: array<int, array{id: int, before: array<string, mixed>}>}|null
+     */
+    private function extractImportRevertData(array $meta): ?array
+    {
+        $revert = $meta['revert'] ?? null;
+        if (! is_array($revert)) {
+            return null;
+        }
+
+        $createdProductIds = [];
+        foreach ((array) ($revert['created_product_ids'] ?? []) as $id) {
+            $productId = (int) $id;
+            if ($productId > 0) {
+                $createdProductIds[] = $productId;
+            }
+        }
+        $createdProductIds = array_values(array_unique($createdProductIds));
+
+        $updatedProducts = [];
+        foreach ((array) ($revert['updated_products'] ?? []) as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $productId = (int) ($row['id'] ?? 0);
+            $before = is_array($row['before'] ?? null) ? (array) $row['before'] : null;
+            if ($productId <= 0 || $before === null) {
+                continue;
+            }
+
+            $updatedProducts[] = [
+                'id' => $productId,
+                'before' => $before,
+            ];
+        }
+
+        return [
+            'created_product_ids' => $createdProductIds,
+            'updated_products' => $updatedProducts,
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $before
+     * @return array<string, mixed>
+     */
+    private function normalizeImportedProductBeforePayload(array $before): array
+    {
+        $payload = [];
+
+        if (array_key_exists('price', $before) && is_numeric($before['price'])) {
+            $payload['price'] = round((float) $before['price'], 2);
+        }
+
+        if (array_key_exists('cost_price', $before)) {
+            $payload['cost_price'] = $before['cost_price'] === null || $before['cost_price'] === ''
+                ? null
+                : round((float) $before['cost_price'], 2);
+        }
+
+        if (array_key_exists('initial_stock', $before)) {
+            $payload['initial_stock'] = max(0, (int) $before['initial_stock']);
+        }
+
+        if (array_key_exists('stock', $before)) {
+            $payload['stock'] = (int) $before['stock'];
+        }
+
+        return $payload;
+    }
+
+    private function latestRevertableImportLog(int $userId): ?AuditLog
+    {
+        if ($userId <= 0) {
+            return null;
+        }
+
+        $importLogs = AuditLog::query()
+            ->where('action', 'imported')
+            ->where('target_type', 'product')
+            ->where('user_id', $userId)
+            ->latest('id')
+            ->limit(20)
+            ->get();
+
+        foreach ($importLogs as $importLog) {
+            $meta = (array) ($importLog->meta ?? []);
+            if (isset($meta['reverted_at']) && trim((string) $meta['reverted_at']) !== '') {
+                continue;
+            }
+
+            $revertData = $this->extractImportRevertData($meta);
+            if ($revertData === null) {
+                continue;
+            }
+
+            if ($revertData['created_product_ids'] === [] && $revertData['updated_products'] === []) {
+                continue;
+            }
+
+            return $importLog;
+        }
+
+        return null;
     }
 
     /**

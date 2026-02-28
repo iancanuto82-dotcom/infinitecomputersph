@@ -2,6 +2,7 @@
     @php($canViewHistory = \App\Support\AdminAccess::hasPermission(auth()->user(), 'audit.view'))
     @php($canEditProducts = \App\Support\AdminAccess::hasPermission(auth()->user(), 'products.edit'))
     @php($canViewProductCostStock = \App\Support\AdminAccess::hasPermission(auth()->user(), 'products.cost_stock.view'))
+    @php($stockToneClass = fn ($stock) => (int) $stock <= 0 ? 'text-rose-600 font-semibold' : ((int) $stock <= 3 ? 'text-amber-600 font-semibold' : 'text-emerald-600 font-semibold'))
 
     <x-slot name="header">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -111,7 +112,7 @@
                                                     @endif
                                                 </td>
                                             @endif
-                                            <td class="px-6 py-4 text-right tabular-nums {{ $product->stock <= $lowStockThreshold ? 'text-gray-900 font-semibold' : 'text-gray-900' }}">
+                                            <td class="px-6 py-4 text-right tabular-nums {{ $stockToneClass((int) $product->stock) }}">
                                                 {{ number_format((int) $product->stock) }}
                                             </td>
                                             <td class="px-6 py-4">
@@ -168,7 +169,7 @@
                                     <div class="mt-0.5 text-xs text-gray-600">{{ $product->category->name ?? 'Uncategorized' }}</div>
                                 </div>
                                 <div class="flex items-center gap-3 shrink-0">
-                                    <div class="text-sm font-semibold text-gray-900 tabular-nums">{{ number_format((int) $product->stock) }}</div>
+                                    <div class="text-sm tabular-nums {{ $stockToneClass((int) $product->stock) }}">{{ number_format((int) $product->stock) }}</div>
                                     @if ($canEditProducts)
                                         <a href="{{ route('admin.products.edit', $product) }}"
                                             class="text-sm font-medium text-gray-900 underline underline-offset-4 hover:no-underline">

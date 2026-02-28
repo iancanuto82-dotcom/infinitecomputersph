@@ -9,6 +9,7 @@ use App\Models\Quotation;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\SalePayment;
+use App\Support\AdminAccess;
 use App\Support\AuditLogger;
 use App\Support\SalePaymentMode;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -120,6 +121,7 @@ class SalesController extends Controller
 
         return view('admin.sales.create', [
             'products' => $products,
+            'canEditSalePrice' => AdminAccess::hasPermission(auth()->user(), 'sales.price.edit'),
             'paymentModeGroups' => SalePaymentMode::groups(),
             'defaultPaymentMode' => SalePaymentMode::DEFAULT,
             'posSurchargeRate' => SalePaymentMode::posSurchargeRate(),
@@ -168,6 +170,8 @@ class SalesController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $canEditSalePrice = AdminAccess::hasPermission($request->user(), 'sales.price.edit');
+
         $validated = $request->validate([
             'sold_at' => ['required', 'date'],
             'customer_name' => ['required', 'string', 'max:255'],
@@ -195,11 +199,11 @@ class SalesController extends Controller
         ])->values();
         $productIds = $items->pluck('product_id')->unique()->values()->all();
 
-        return DB::transaction(function () use ($request, $validated, $deductStock, $items, $productIds) {
+        return DB::transaction(function () use ($request, $validated, $deductStock, $items, $productIds, $canEditSalePrice) {
             $products = Product::query()
                 ->whereIn('id', $productIds)
                 ->lockForUpdate()
-                ->get(['id', 'name', 'stock'])
+                ->get(['id', 'name', 'price', 'stock'])
                 ->keyBy('id');
 
             $subtotal = 0.0;
@@ -213,13 +217,16 @@ class SalesController extends Controller
                 }
 
                 $qtyByProductId[$row['product_id']] = ($qtyByProductId[$row['product_id']] ?? 0) + $row['qty'];
-                $lineTotal = $row['qty'] * $row['unit_price'];
+                $unitPrice = $canEditSalePrice
+                    ? round($row['unit_price'], 2)
+                    : round((float) ($product->price ?? 0), 2);
+                $lineTotal = $row['qty'] * $unitPrice;
                 $subtotal += $lineTotal;
 
                 $saleItems[] = [
                     'product_id' => (int) $product->id,
                     'product_name' => (string) $product->name,
-                    'unit_price' => round($row['unit_price'], 2),
+                    'unit_price' => $unitPrice,
                     'qty' => (int) $row['qty'],
                     'line_total' => round($lineTotal, 2),
                     'created_at' => now(),

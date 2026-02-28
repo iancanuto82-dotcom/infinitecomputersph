@@ -13,9 +13,9 @@
     <div class="py-8">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="rounded-xl bg-white shadow-sm ring-1 ring-black/10 p-6 sm:p-8"
-                x-data="saleForm({{ \Illuminate\Support\Js::from($products) }})">
+                x-data="saleForm({{ \Illuminate\Support\Js::from($products) }}, {{ $canEditSalePrice ? 'true' : 'false' }})">
                 <form method="POST" action="{{ route('admin.sales.store') }}" class="space-y-6"
-                    @submit="if (soldAtAuto) soldAt = formatLocalDateTime(new Date())">
+                    @submit="if (!canSubmit()) { $event.preventDefault(); return; } if (soldAtAuto) soldAt = formatLocalDateTime(new Date())">
                     @csrf
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -64,6 +64,11 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-900">Items</label>
+                        @if (! $canEditSalePrice)
+                            <p class="mt-1 text-xs text-amber-700">
+                                Unit price is locked for your account and uses the current product price.
+                            </p>
+                        @endif
 
                         @error('items')<div class="mt-2 text-sm text-rose-700">{{ $message }}</div>@enderror
 
@@ -103,7 +108,7 @@
                                                         @mousedown.prevent="selectProduct(row, p)">
                                                         <div class="font-medium text-gray-900" x-text="p.name"></div>
                                                         <div class="mt-0.5 text-xs text-gray-600 tabular-nums">
-                                                            &#8369;<span x-text="formatMoney(p.price)"></span> Â· Stock: <span x-text="p.stock"></span>
+                                                            &#8369;<span x-text="formatMoney(p.price)"></span> Â· Stock: <span :class="stockToneClass(p.stock)" x-text="p.stock"></span>
                                                         </div>
                                                     </button>
                                                 </template>
@@ -113,6 +118,10 @@
                                                     No products matched your search.
                                                 </div>
                                             </div>
+
+                                            <p x-cloak x-show="rowProductError(row) !== ''"
+                                                class="mt-1 text-xs text-rose-700"
+                                                x-text="rowProductError(row)"></p>
                                         </div>
 
                                         <div class="sale-item-field">
@@ -136,9 +145,10 @@
                                             </label>
                                             <input type="number" min="0" step="0.01"
                                                 :id="`sale_item_unit_price_${idx}_${row.key}`"
-                                                class="block h-[42px] w-full rounded-md border-black/20 bg-white px-3 text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500"
+                                                class="block h-[42px] w-full rounded-md border-black/20 px-3 text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500 {{ $canEditSalePrice ? 'bg-white' : 'bg-gray-100' }}"
                                                 :name="`items[${idx}][unit_price]`"
                                                 x-model.number="row.unit_price"
+                                                :readonly="!canEditPrice"
                                                 aria-label="Unit price"
                                                 placeholder="â‚±">
                                         </div>
@@ -146,7 +156,7 @@
                                         <div class="sale-item-actions">
                                             <div class="sale-item-meta tabular-nums">
                                                 <span x-show="row.product_id">
-                                                    Stock: <span class="font-medium text-gray-900" x-text="productStock(row.product_id)"></span>
+                                                    Stock: <span class="font-medium" :class="stockToneClass(productStock(row.product_id))" x-text="productStock(row.product_id)"></span>
                                                 </span>
                                             </div>
                                             <button type="button"
@@ -260,10 +270,19 @@
                             Back
                         </a>
 
-                        <button type="submit"
-                            class="inline-flex items-center justify-center rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
-                            Create sale
-                        </button>
+                        <div class="flex w-full flex-col items-end gap-2 sm:w-auto">
+                            <button type="submit"
+                                :disabled="!canSubmit()"
+                                class="inline-flex items-center justify-center rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                                Create sale
+                            </button>
+                            <div x-cloak x-show="!canSubmit()" class="text-right">
+                                <p class="text-xs font-medium text-rose-700">Create sale is disabled:</p>
+                                <template x-for="reason in submitBlockReasons()" :key="reason">
+                                    <p class="mt-0.5 text-xs text-rose-700" x-text="`- ${reason}`"></p>
+                                </template>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -315,9 +334,10 @@
     </style>
 
     <script>
-        function saleForm(products) {
+        function saleForm(products, canEditPrice) {
             return {
                 products,
+                canEditPrice: !!canEditPrice,
                 soldAt: @json(old('sold_at', now()->format('Y-m-d\\TH:i'))),
                 soldAtAuto: @json(old('sold_at') ? false : true),
                 payment_status: @json(old('payment_status', 'unpaid')),
@@ -372,6 +392,12 @@
                 productStock(productId) {
                     return Number(this.productById(productId)?.stock ?? 0)
                 },
+                stockToneClass(stock) {
+                    const qty = Number(stock ?? 0)
+                    if (!Number.isFinite(qty) || qty <= 0) return 'text-rose-600'
+                    if (qty <= 3) return 'text-amber-600'
+                    return 'text-emerald-600'
+                },
                 openProductSearch(row) {
                     row.searchOpen = true
                     row.searchCursor = 0
@@ -400,6 +426,11 @@
                     if (String(row.search || '').trim() !== String(selected.name || '')) {
                         row.product_id = ''
                         row.unit_price = 0
+                        return
+                    }
+
+                    if (!this.canEditPrice) {
+                        row.unit_price = Number(selected.price ?? 0)
                     }
                 },
                 filteredProducts(row) {
@@ -459,6 +490,54 @@
                     const qty = Math.max(1, Number(row.qty ?? 1))
                     const price = Math.max(0, Number(row.unit_price ?? 0))
                     return qty * price
+                },
+                rowHasValidProduct(row) {
+                    return !!this.productById(row?.product_id)
+                },
+                rowProductError(row) {
+                    const typed = String(row?.search ?? '').trim()
+                    const hasProduct = this.rowHasValidProduct(row)
+
+                    if (!hasProduct && typed !== '') {
+                        return 'Product not found. Select an existing product from the list.'
+                    }
+
+                    if (!hasProduct && typed === '' && this.rows.length > 1) {
+                        return 'Select a product or remove this item row.'
+                    }
+
+                    return ''
+                },
+                submitBlockReasons() {
+                    const invalidProductRows = []
+                    const unknownProductRows = []
+
+                    this.rows.forEach((row, idx) => {
+                        const rowNumber = idx + 1
+                        const hasProduct = this.rowHasValidProduct(row)
+                        const typed = String(row?.search ?? '').trim()
+
+                        if (!hasProduct) {
+                            invalidProductRows.push(rowNumber)
+                            if (typed !== '') {
+                                unknownProductRows.push(rowNumber)
+                            }
+                        }
+                    })
+
+                    const reasons = []
+                    if (invalidProductRows.length > 0) {
+                        reasons.push(`Select a valid product for each row (row${invalidProductRows.length > 1 ? 's' : ''}: ${invalidProductRows.join(', ')}).`)
+                    }
+
+                    if (unknownProductRows.length > 0) {
+                        reasons.push(`Some typed products do not exist (row${unknownProductRows.length > 1 ? 's' : ''}: ${unknownProductRows.join(', ')}).`)
+                    }
+
+                    return reasons
+                },
+                canSubmit() {
+                    return this.submitBlockReasons().length === 0
                 },
                 subtotal() {
                     return this.rows.reduce((sum, row) => sum + this.lineTotal(row), 0)

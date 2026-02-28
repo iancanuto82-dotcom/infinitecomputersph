@@ -239,13 +239,13 @@
                                                             </select>
                                                             <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-600"
                                                                 x-show="single[section.key].product_id">
-                                                                <span x-text="productCategoryName(single[section.key].product_id)"></span>
-                                                                <span>&bull;</span>
-                                                                <span class="tabular-nums">
-                                                                    Stock: <span class="font-medium text-gray-900" x-text="productStock(single[section.key].product_id) ?? '-'"></span>
-                                                                </span>
+                                                                    <span x-text="productCategoryName(single[section.key].product_id)"></span>
+                                                                    <span>&bull;</span>
+                                                                    <span class="tabular-nums">
+                                                                    Stock: <span class="font-medium" :class="stockToneClass(productStock(single[section.key].product_id))" x-text="productStock(single[section.key].product_id) ?? '-'"></span>
+                                                                    </span>
+                                                                </div>
                                                             </div>
-                                                        </div>
                                                         <div class="print-only text-sm font-medium text-gray-900" x-text="productName(single[section.key].product_id)"></div>
                                                     </td>
                                                     <td class="px-6 py-4 text-right border-l border-black/10">
@@ -309,7 +309,7 @@
                                                                     <span x-text="productCategoryName(row.product_id)"></span>
                                                                     <span>&bull;</span>
                                                                     <span class="tabular-nums">
-                                                                        Stock: <span class="font-medium text-gray-900" x-text="productStock(row.product_id) ?? '-'"></span>
+                                                                        Stock: <span class="font-medium" :class="stockToneClass(productStock(row.product_id))" x-text="productStock(row.product_id) ?? '-'"></span>
                                                                     </span>
                                                                 </div>
                                                             </div>
@@ -770,6 +770,12 @@
                         const product = this.productById(productId);
                         if (!product) return null;
                         return Number.isFinite(product.stock) ? product.stock : null;
+                    },
+                    stockToneClass(stock) {
+                        const qty = Number(stock ?? 0);
+                        if (!Number.isFinite(qty) || qty <= 0) return 'text-rose-600';
+                        if (qty <= 3) return 'text-amber-600';
+                        return 'text-emerald-600';
                     },
 
                     productCategoryName(productId) {

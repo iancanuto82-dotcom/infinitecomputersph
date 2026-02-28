@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\ExpenseController as AdminExpenseController;
+use App\Http\Controllers\Admin\ReplacementWarrantyController as AdminReplacementWarrantyController;
 use App\Http\Controllers\Admin\WebsiteContentController as AdminWebsiteContentController;
 use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
 use App\Http\Controllers\Admin\PcBuilderController as AdminPcBuilderController;
@@ -35,12 +36,15 @@ Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function ()
     Route::middleware('admin.permission:sales.view')->group(function () {
         Route::get('/sales', [AdminSalesController::class, 'index'])->name('sales');
         Route::get('/expenses', [AdminExpenseController::class, 'index'])->name('expenses');
+        Route::get('/replacements', [AdminReplacementWarrantyController::class, 'index'])->name('replacements.index');
+        Route::get('/replacements/inventory', [AdminReplacementWarrantyController::class, 'inventory'])->name('replacements.inventory');
     });
 
     Route::middleware('admin.permission:sales.edit')->group(function () {
         Route::get('/sales/create', [AdminSalesController::class, 'create'])->name('sales.create');
         Route::post('/sales', [AdminSalesController::class, 'store'])->name('sales.store');
         Route::post('/expenses', [AdminExpenseController::class, 'store'])->name('expenses.store');
+        Route::post('/replacements', [AdminReplacementWarrantyController::class, 'store'])->name('replacements.store');
         Route::delete('/expenses/{expense}', [AdminExpenseController::class, 'destroy'])->name('expenses.destroy');
         Route::patch('/sales/{sale}/payment', [AdminSalesController::class, 'updatePayment'])->name('sales.payment');
         Route::patch('/sales/{sale}/status', [AdminSalesController::class, 'updateStatus'])->name('sales.status');
@@ -71,6 +75,7 @@ Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function ()
         Route::get('products/create', [AdminProductController::class, 'create'])->name('products.create');
         Route::get('products/{product}/edit', [AdminProductController::class, 'edit'])->name('products.edit');
         Route::post('products/import', [AdminProductController::class, 'import'])->name('products.import');
+        Route::post('products/import/revert', [AdminProductController::class, 'revertImport'])->name('products.import.revert');
         Route::post('products', [AdminProductController::class, 'store'])->name('products.store');
         Route::delete('products/bulk-destroy', [AdminProductController::class, 'bulkDestroy'])->name('products.bulk-destroy');
         Route::match(['put', 'patch'], 'products/{product}', [AdminProductController::class, 'update'])->name('products.update');
@@ -108,6 +113,7 @@ Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function ()
 
     Route::middleware('admin.permission:audit.view')->group(function () {
         Route::get('/history', [AdminAuditLogController::class, 'index'])->name('audit.index');
+        Route::post('/history/{auditLog}/revert', [AdminAuditLogController::class, 'revert'])->name('audit.revert');
     });
 });
 

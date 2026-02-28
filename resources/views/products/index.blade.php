@@ -24,18 +24,14 @@
                 <div>
                     <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight">Price List</h1>
                     <p class="theme-muted mt-2 text-sm">
-                        Browse products, filter by category, and search by name.
+                        Browse products and filter by category.
                     </p>
                 </div>
 
                 <form method="GET" x-data="{}" class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-                    <div class="w-full sm:w-72">
-                        <label for="search" class="sr-only">Search</label>
-                        <input id="search" type="text" name="search" value="{{ $search }}"
-                            placeholder="Search products..."
-                            @input.debounce.400ms="$el.form.requestSubmit()"
-                            class="theme-input block w-full rounded-md px-3 py-2 text-sm shadow-sm">
-                    </div>
+                    @if (!empty($search))
+                        <input type="hidden" name="search" value="{{ $search }}">
+                    @endif
 
                     <div class="relative w-full sm:w-64 lg:w-72"
                         x-data="{
@@ -446,6 +442,9 @@
                                                 </template>
                                             </template>
                                         </select>
+                                        <p x-cloak x-show="String(category.id) === 'cpu_cooler'" class="theme-muted mt-1 text-xs">
+                                            Leave blank for stock cooler.
+                                        </p>
                                     </div>
 
                                     <div class="sm:col-span-2">

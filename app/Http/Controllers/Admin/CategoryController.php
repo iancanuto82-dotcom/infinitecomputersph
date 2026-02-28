@@ -78,6 +78,7 @@ class CategoryController extends Controller
     public function destroy(Request $request, Category $category)
     {
         $name = (string) $category->name;
+        $deletedSnapshot = $category->only(['name', 'parent_id']);
         $category->delete();
 
         AuditLogger::record(
@@ -86,7 +87,10 @@ class CategoryController extends Controller
             'category',
             (int) $category->id,
             $name,
-            'Deleted category.'
+            'Deleted category.',
+            [
+                'deleted_snapshot' => $deletedSnapshot,
+            ]
         );
 
         $this->forgetPublicCatalogCaches();

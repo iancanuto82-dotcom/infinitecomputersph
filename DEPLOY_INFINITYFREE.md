@@ -48,6 +48,23 @@ Do not upload:
 - `node_modules`
 - test/dev-only local files you do not need
 
+### If File Manager upload keeps failing
+For this project, browser upload often fails because there are many files (`vendor` is large).
+
+Use FTP (recommended):
+1. Open your hosting control panel and get FTP hostname, username, password.
+2. Connect using FileZilla/WinSCP.
+3. Upload in this order:
+   - everything except `vendor`
+   - then upload `vendor` last
+4. Exclude these folders from upload:
+   - `node_modules`
+   - `.git`
+   - `tests`
+   - `docker`
+
+If you still use File Manager, upload smaller batches instead of all files at once.
+
 ## 5) Permissions
 Ensure these are writable by PHP:
 - `storage`
@@ -61,4 +78,3 @@ Ensure these are writable by PHP:
    - `APP_KEY`
    - writable `storage` and `bootstrap/cache`
    - `vendor` uploaded correctly
-

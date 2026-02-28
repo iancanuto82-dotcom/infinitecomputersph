@@ -38,6 +38,7 @@ final class AdminAccess
             'permissions' => [
                 'sales.view' => 'View sales and quotations',
                 'sales.edit' => 'Create sales and update payment/status',
+                'sales.price.edit' => 'Edit item unit price when creating sales',
             ],
         ],
         'pc_builder' => [
@@ -69,6 +70,7 @@ final class AdminAccess
         'products.edit' => ['products.view', 'products.cost_stock.view'],
         'categories.edit' => 'categories.view',
         'sales.edit' => 'sales.view',
+        'sales.price.edit' => ['sales.edit', 'sales.view'],
         'pc_builder.edit' => 'pc_builder.view',
         'content.edit' => 'content.view',
     ];

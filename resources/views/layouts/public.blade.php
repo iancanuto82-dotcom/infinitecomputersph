@@ -40,6 +40,51 @@
 @php
     $isWidePublicPage = request()->routeIs('home') || request()->routeIs('pricelist');
     $containerMaxWidth = $isWidePublicPage ? 'max-w-[92rem]' : 'max-w-7xl';
+    $headerCategories = collect();
+
+    try {
+        $headerCategories = \App\Models\Category::query()
+            ->select(['id', 'name', 'parent_id'])
+            ->orderByRaw('CASE WHEN parent_id IS NULL THEN 0 ELSE 1 END')
+            ->orderBy('name')
+            ->get();
+    } catch (\Throwable $e) {
+        $headerCategories = collect();
+    }
+
+    $headerMainCategories = $headerCategories
+        ->filter(fn ($category) => ($category->parent_id ?? null) === null)
+        ->values();
+
+    $headerSubcategoriesByParent = $headerCategories
+        ->filter(fn ($category) => ($category->parent_id ?? null) !== null)
+        ->groupBy(fn ($category) => (int) $category->parent_id);
+
+    $headerFallbackProductsByCategory = collect();
+
+    try {
+        $mainCategoryIdsWithoutSubcategories = $headerMainCategories
+            ->filter(fn ($category) => $headerSubcategoriesByParent->get((int) $category->id, collect())->isEmpty())
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->values();
+
+        if ($mainCategoryIdsWithoutSubcategories->isNotEmpty()) {
+            $headerFallbackProductsByCategory = \App\Models\Product::query()
+                ->select(['id', 'name', 'price', 'category_id'])
+                ->where('is_active', true)
+                ->whereIn('category_id', $mainCategoryIdsWithoutSubcategories->all())
+                ->orderBy('name')
+                ->get()
+                ->groupBy(fn ($product) => (int) $product->category_id)
+                ->map(fn ($products) => $products->take(8)->values());
+        }
+    } catch (\Throwable $e) {
+        $headerFallbackProductsByCategory = collect();
+    }
+
+    $headerInitialParentId = (string) (optional($headerMainCategories->first())->id ?? '');
 @endphp
 <body class="public-theme antialiased min-h-screen">
     <div class="min-h-screen flex flex-col" x-data="{ mapOpen: false, logoFailed: false }" x-on:keydown.escape.window="mapOpen = false">
@@ -114,12 +159,126 @@
 
             <div class="market-menubar">
                 <div class="{{ $containerMaxWidth }} mx-auto px-4 sm:px-6 lg:px-8">
-                    <div class="flex items-center justify-center gap-6 overflow-x-auto py-3 text-sm font-medium uppercase tracking-wide [&::-webkit-scrollbar]:hidden"
+                    <div class="flex items-center justify-center gap-6 overflow-x-auto md:overflow-visible py-3 text-sm font-medium uppercase tracking-wide [&::-webkit-scrollbar]:hidden"
                         style="-ms-overflow-style: none; scrollbar-width: none;">
                         <a href="{{ route('home') }}" class="market-menu-link {{ request()->routeIs('home') ? 'market-menu-active' : '' }}">Home</a>
-                        <a href="{{ route('pricelist') }}" class="market-menu-link {{ request()->routeIs('pricelist*') ? 'market-menu-active' : '' }}">
-                            Products
-                        </a>
+                        <div class="market-menu-group market-menu-group--products"
+                            x-data="{
+                                productsOpen: false,
+                                openTimer: null,
+                                closeTimer: null,
+                                isTouch: window.matchMedia('(hover: none), (pointer: coarse)').matches,
+                                activeParent: '{{ $headerInitialParentId }}',
+                                openProducts() {
+                                    window.clearTimeout(this.closeTimer);
+                                    if (this.productsOpen) return;
+
+                                    window.clearTimeout(this.openTimer);
+                                    this.openTimer = window.setTimeout(() => {
+                                        this.productsOpen = true;
+                                        if (!this.activeParent) this.activeParent = '{{ $headerInitialParentId }}';
+                                    }, 55);
+                                },
+                                closeProducts(immediate = false) {
+                                    window.clearTimeout(this.openTimer);
+
+                                    if (immediate) {
+                                        window.clearTimeout(this.closeTimer);
+                                        this.productsOpen = false;
+                                        return;
+                                    }
+
+                                    window.clearTimeout(this.closeTimer);
+                                    this.closeTimer = window.setTimeout(() => {
+                                        this.productsOpen = false;
+                                    }, 140);
+                                }
+                            }"
+                            x-on:mouseenter="if (!isTouch) openProducts()"
+                            x-on:mouseleave="if (!isTouch) closeProducts()">
+                            <a href="{{ route('pricelist') }}"
+                                class="market-menu-link inline-flex items-center gap-1 {{ request()->routeIs('pricelist*') ? 'market-menu-active' : '' }}"
+                                x-on:click.prevent="if (isTouch) { productsOpen = !productsOpen; if (productsOpen && !activeParent) activeParent = '{{ $headerInitialParentId }}'; } else { window.location.href = $el.href; }">
+                                Products
+                                <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.51a.75.75 0 01-1.08 0l-4.25-4.51a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                                </svg>
+                            </a>
+                            <div x-cloak
+                                x-show="productsOpen"
+                                x-transition:enter="transition ease-out duration-130"
+                                x-transition:enter-start="opacity-0 -translate-y-1 scale-[0.99]"
+                                x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                                x-transition:leave="transition ease-in duration-110"
+                                x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                                x-transition:leave-end="opacity-0 -translate-y-1 scale-[0.99]"
+                                x-on:mouseenter="if (!isTouch) openProducts()"
+                                x-on:mouseleave="if (!isTouch) closeProducts()"
+                                x-on:click.outside="closeProducts(true)"
+                                class="market-mega-popover">
+                                <div class="market-mega-shell">
+                                    <div class="market-mega-main">
+                                        <a href="{{ route('pricelist') }}" class="market-mega-main-link market-mega-main-link-home">
+                                            All Products
+                                        </a>
+                                        @foreach ($headerMainCategories as $mainCategory)
+                                            <a href="{{ route('pricelist', ['category' => $mainCategory->id]) }}"
+                                                class="market-mega-main-link"
+                                                x-on:mouseenter="activeParent = '{{ (int) $mainCategory->id }}'"
+                                                x-on:focus="activeParent = '{{ (int) $mainCategory->id }}'"
+                                                :class="activeParent === '{{ (int) $mainCategory->id }}' ? 'market-mega-main-link-active' : ''">
+                                                <span>{{ $mainCategory->name }}</span>
+                                                <span class="market-mega-main-arrow" aria-hidden="true">&rsaquo;</span>
+                                            </a>
+                                        @endforeach
+                                    </div>
+
+                                    <div class="market-mega-sub">
+                                        @foreach ($headerMainCategories as $mainCategory)
+                                            @php($subcategories = $headerSubcategoriesByParent->get((int) $mainCategory->id, collect()))
+                                            <section x-show="activeParent === '{{ (int) $mainCategory->id }}'" class="market-mega-sub-panel">
+                                                <div class="market-mega-sub-head">
+                                                    <a href="{{ route('pricelist', ['category' => $mainCategory->id]) }}" class="market-mega-sub-title">
+                                                        {{ $mainCategory->name }}
+                                                    </a>
+                                                    <a href="{{ route('pricelist', ['category' => $mainCategory->id]) }}" class="market-mega-sub-all">
+                                                        View all
+                                                    </a>
+                                                </div>
+
+                                                @if ($subcategories->isNotEmpty())
+                                                    <div class="market-mega-sub-grid">
+                                                        @foreach ($subcategories as $subcategory)
+                                                            <a href="{{ route('pricelist', ['category' => $subcategory->id]) }}"
+                                                                class="market-mega-sub-link">
+                                                                {{ $subcategory->name }}
+                                                            </a>
+                                                        @endforeach
+                                                    </div>
+                                                @else
+                                                    @php($fallbackProducts = $headerFallbackProductsByCategory->get((int) $mainCategory->id, collect()))
+                                                    @if ($fallbackProducts->isNotEmpty())
+                                                        <div class="market-mega-products-grid">
+                                                            @foreach ($fallbackProducts as $product)
+                                                                <a href="{{ route('pricelist.show', $product->id) }}" class="market-mega-product-link">
+                                                                    <span class="market-mega-product-name">{{ $product->name }}</span>
+                                                                    <span class="market-mega-product-price">&#8369;{{ number_format((float) $product->price, 2) }}</span>
+                                                                </a>
+                                                            @endforeach
+                                                        </div>
+                                                    @else
+                                                        <p class="market-mega-empty">No products available in this category yet.</p>
+                                                    @endif
+                                                @endif
+                                            </section>
+                                        @endforeach
+                                    </div>
+                                </div>
+                                <div x-show="'{{ $headerInitialParentId }}' === ''" class="market-mega-empty px-4 py-3">
+                                    Categories are not available yet.
+                                </div>
+                            </div>
+                        </div>
                         <a href="{{ route('pricelist', ['tab' => 'diy_builder']) }}#pricelist-tabs" class="market-menu-link">Build a PC</a>
                     </div>
                 </div>

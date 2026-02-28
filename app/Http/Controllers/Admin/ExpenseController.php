@@ -103,11 +103,13 @@ class ExpenseController extends Controller
         $title = (string) $expense->title;
         $amount = (float) $expense->amount;
         $spentAt = optional($expense->spent_at)->toIso8601String();
+        $deletedSnapshot = $expense->only(['created_by', 'spent_at', 'title', 'category', 'amount', 'notes']);
         $expense->delete();
 
         AuditLogger::record($request, 'deleted', 'expense', (int) $expense->id, $title, 'Deleted expense.', [
             'amount' => $amount,
             'spent_at' => $spentAt,
+            'deleted_snapshot' => $deletedSnapshot,
         ]);
 
         return back()->with('status', 'Expense deleted.');
