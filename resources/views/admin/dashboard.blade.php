@@ -2,6 +2,7 @@
     @php($canViewHistory = \App\Support\AdminAccess::hasPermission(auth()->user(), 'audit.view'))
     @php($canEditProducts = \App\Support\AdminAccess::hasPermission(auth()->user(), 'products.edit'))
     @php($canViewProductCostStock = \App\Support\AdminAccess::hasPermission(auth()->user(), 'products.cost_stock.view'))
+    @php($isDarkMode = (string) (auth()->user()->theme_preference ?? 'light') === 'dark')
     @php($stockToneClass = fn ($stock) => (int) $stock <= 0 ? 'text-rose-600 font-semibold' : ((int) $stock <= 3 ? 'text-amber-600 font-semibold' : 'text-emerald-600 font-semibold'))
 
     <x-slot name="header">
@@ -13,6 +14,21 @@
                 </p>
             </div>
 
+            <form id="dashboard-theme-preference-form" method="POST" action="{{ route('admin.dashboard.theme') }}"
+                class="inline-flex w-fit items-center gap-3 rounded-full bg-white px-4 py-2 shadow-sm ring-1 ring-black/10">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="theme_preference" value="{{ $isDarkMode ? 'light' : 'dark' }}">
+                <label for="dashboard-theme-switch" class="text-sm font-medium text-gray-700">Dark mode</label>
+                <button id="dashboard-theme-switch" type="submit" role="switch" aria-label="Toggle dark mode"
+                    aria-checked="{{ $isDarkMode ? 'true' : 'false' }}"
+                    class="relative inline-flex h-6 w-11 items-center rounded-full border border-black/10 transition {{ $isDarkMode ? 'bg-slate-900' : 'bg-gray-300' }}">
+                    <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition {{ $isDarkMode ? 'translate-x-5' : 'translate-x-0.5' }}"></span>
+                </button>
+                <span id="dashboard-theme-switch-label" class="text-xs font-medium text-gray-600">
+                    {{ $isDarkMode ? 'On' : 'Off' }}
+                </span>
+            </form>
         </div>
     </x-slot>
 
@@ -209,4 +225,5 @@
             </div>
         </div>
     </div>
+
 </x-app-layout>

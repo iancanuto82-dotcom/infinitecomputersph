@@ -19,9 +19,11 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     @php
+        $user = auth()->user();
         $isAdminArea = request()->routeIs('admin.*') || request()->is('admin*');
-        $isAdminUser = \App\Support\AdminAccess::isAdmin(auth()->user());
+        $isAdminUser = \App\Support\AdminAccess::isAdmin($user);
         $useSidebarNav = $isAdminUser && ($isAdminArea || request()->routeIs('dashboard'));
+        $isDarkThemeEnabled = $isAdminUser && (string) ($user?->theme_preference ?? 'light') === 'dark';
         $containerMaxWidth = $useSidebarNav ? 'max-w-[92rem]' : 'max-w-7xl';
         $adminToastType = null;
         $adminToastMessage = null;
@@ -43,14 +45,14 @@
         }
     @endphp
 
-    <body class="font-sans antialiased">
-        <div class="{{ $useSidebarNav ? 'min-h-screen bg-gray-50 text-gray-900 flex' : 'min-h-screen bg-gray-100' }}">
+    <body class="font-sans antialiased{{ $isDarkThemeEnabled ? ' admin-theme-dark' : '' }}">
+        <div class="{{ $useSidebarNav ? ($isDarkThemeEnabled ? 'min-h-screen bg-slate-950 text-slate-100 flex' : 'min-h-screen bg-gray-50 text-gray-900 flex') : 'min-h-screen bg-gray-100' }}">
             @include('layouts.navigation')
 
             <div class="{{ $useSidebarNav ? 'flex-1 min-w-0 overflow-x-hidden' : '' }}">
                 <!-- Page Heading -->
                 @isset($header)
-                    <header class="bg-white shadow">
+                    <header class="{{ $isDarkThemeEnabled ? 'bg-slate-900 shadow shadow-black/30' : 'bg-white shadow' }}">
                         <div class="{{ $containerMaxWidth }} mx-auto py-6 px-4 sm:px-6 lg:px-8">
                             {{ $header }}
                         </div>

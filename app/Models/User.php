@@ -26,6 +26,7 @@ class User extends Authenticatable
         'password',
         'role',
         'admin_permissions',
+        'theme_preference',
     ];
 
     /**

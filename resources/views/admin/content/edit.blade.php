@@ -45,6 +45,22 @@
                 || trim((string) ($row['image_url'] ?? '')) !== ''
                 || trim((string) ($row['link_url'] ?? '')) !== '';
         })->count();
+
+        $errorKeys = array_keys($errors->getMessages());
+        $hasSlideErrors = collect($errorKeys)->contains(fn ($key) => str_starts_with((string) $key, 'slides.'));
+        $hasBrandErrors = collect($errorKeys)->contains(fn ($key) => str_starts_with((string) $key, 'brands.'));
+        $hasBundleErrors = collect($errorKeys)->contains(function ($key) {
+            $errorKey = (string) $key;
+            return str_starts_with($errorKey, 'entry_bundle_ads.')
+                || str_starts_with($errorKey, 'gaming_bundle_ads.');
+        });
+
+        $initialContentTab = old('_content_tab');
+        if (! in_array($initialContentTab, ['slides', 'brands', 'bundles'], true)) {
+            $initialContentTab = $hasSlideErrors
+                ? 'slides'
+                : ($hasBrandErrors ? 'brands' : ($hasBundleErrors ? 'bundles' : 'slides'));
+        }
     @endphp
 
     <x-slot name="header">
@@ -60,6 +76,7 @@
         <div class="max-w-[92rem] mx-auto sm:px-6 lg:px-8 space-y-6">
             <form method="POST" action="{{ route('admin.content.update') }}" enctype="multipart/form-data" class="space-y-6"
                 x-data="{
+                    activeTab: @js($initialContentTab),
                     confirmDeleteOpen: false,
                     pendingDeleteCheckbox: null,
                     pendingDeleteLabel: '',
@@ -86,8 +103,38 @@
                 @keydown.escape.window="closeDeleteConfirm()">
                 @csrf
                 @method('PUT')
+                <input type="hidden" name="_content_tab" x-model="activeTab">
+
+                <div class="rounded-xl bg-white p-2 shadow-sm ring-1 ring-black/10">
+                    <div class="flex flex-wrap items-center gap-2" role="tablist" aria-label="Website content sections">
+                        <button type="button" role="tab"
+                            @click="activeTab = 'slides'"
+                            :aria-selected="activeTab === 'slides'"
+                            class="inline-flex items-center rounded-md px-3 py-2 text-sm font-medium ring-1 transition"
+                            :class="activeTab === 'slides' ? 'bg-gray-900 text-white ring-gray-900' : 'bg-white text-gray-700 ring-black/10 hover:bg-gray-50'">
+                            Carousel Slides
+                        </button>
+                        <button type="button" role="tab"
+                            @click="activeTab = 'brands'"
+                            :aria-selected="activeTab === 'brands'"
+                            class="inline-flex items-center rounded-md px-3 py-2 text-sm font-medium ring-1 transition"
+                            :class="activeTab === 'brands' ? 'bg-gray-900 text-white ring-gray-900' : 'bg-white text-gray-700 ring-black/10 hover:bg-gray-50'">
+                            Featured Brands
+                        </button>
+                        <button type="button" role="tab"
+                            @click="activeTab = 'bundles'"
+                            :aria-selected="activeTab === 'bundles'"
+                            class="inline-flex items-center rounded-md px-3 py-2 text-sm font-medium ring-1 transition"
+                            :class="activeTab === 'bundles' ? 'bg-gray-900 text-white ring-gray-900' : 'bg-white text-gray-700 ring-black/10 hover:bg-gray-50'">
+                            Bundle Ads
+                        </button>
+                    </div>
+                </div>
 
                 <section class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-black/10"
+                    x-cloak
+                    x-show="activeTab === 'slides'"
+                    x-transition.opacity.duration.150ms
                     x-data="{ visibleRows: {{ $initialSlideRows }}, maxRows: {{ $maxSlides }} }">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div>
@@ -198,6 +245,9 @@
                 </section>
 
                 <section class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-black/10"
+                    x-cloak
+                    x-show="activeTab === 'brands'"
+                    x-transition.opacity.duration.150ms
                     x-data="{ visibleRows: {{ $initialBrandRows }}, maxRows: {{ $maxBrands }} }">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div>
@@ -314,7 +364,10 @@
                     </div>
                 </section>
 
-                <section class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-black/10">
+                <section class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-black/10"
+                    x-cloak
+                    x-show="activeTab === 'bundles'"
+                    x-transition.opacity.duration.150ms>
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h3 class="text-base font-semibold text-gray-900">Bundle Ads</h3>

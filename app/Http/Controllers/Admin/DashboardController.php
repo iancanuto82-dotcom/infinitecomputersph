@@ -5,10 +5,26 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
+    public function updateThemePreference(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'theme_preference' => ['required', Rule::in(['light', 'dark'])],
+        ]);
+
+        $request->user()->forceFill([
+            'theme_preference' => (string) $validated['theme_preference'],
+        ])->save();
+
+        return back()->with('status', 'Display mode preference updated.');
+    }
+
     public function __invoke(): View
     {
         $lowStockThreshold = 5;

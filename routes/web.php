@@ -32,6 +32,9 @@ Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function ()
     Route::get('/dashboard', AdminDashboardController::class)
         ->middleware('admin.permission:dashboard.view')
         ->name('dashboard');
+    Route::patch('/dashboard/theme', [AdminDashboardController::class, 'updateThemePreference'])
+        ->middleware('admin.permission:dashboard.view')
+        ->name('dashboard.theme');
 
     Route::middleware('admin.permission:sales.view')->group(function () {
         Route::get('/sales', [AdminSalesController::class, 'index'])->name('sales');

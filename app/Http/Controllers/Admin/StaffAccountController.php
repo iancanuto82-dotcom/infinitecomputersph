@@ -39,6 +39,7 @@ class StaffAccountController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')],
             'password' => ['required', 'confirmed', Password::defaults()],
+            'theme_preference' => ['required', Rule::in(['light', 'dark'])],
             'permissions' => ['required', 'array', 'min:1'],
             'permissions.*' => ['required', 'string'],
         ]);
@@ -57,6 +58,7 @@ class StaffAccountController extends Controller
             'password' => (string) $validated['password'],
             'role' => 'staff',
             'admin_permissions' => $permissions,
+            'theme_preference' => (string) $validated['theme_preference'],
             'email_verified_at' => now(),
         ]);
 
@@ -69,6 +71,7 @@ class StaffAccountController extends Controller
             'Created staff account.',
             [
                 'email' => (string) $staffUser->email,
+                'theme_preference' => (string) $staffUser->theme_preference,
                 'permissions' => $permissions,
             ]
         );
@@ -101,6 +104,7 @@ class StaffAccountController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'password' => ['nullable', 'confirmed', Password::defaults()],
+            'theme_preference' => ['required', Rule::in(['light', 'dark'])],
             'permissions' => ['required', 'array', 'min:1'],
             'permissions.*' => ['required', 'string'],
         ]);
@@ -118,8 +122,9 @@ class StaffAccountController extends Controller
             'email' => $validated['email'],
             'role' => 'staff',
             'admin_permissions' => $permissions,
+            'theme_preference' => (string) $validated['theme_preference'],
         ];
-        $before = $user->only(['name', 'email', 'admin_permissions']);
+        $before = $user->only(['name', 'email', 'admin_permissions', 'theme_preference']);
 
         if (! empty($validated['password'])) {
             $payload['password'] = (string) $validated['password'];
@@ -136,7 +141,7 @@ class StaffAccountController extends Controller
             'Updated staff account.',
             [
                 'before' => $before,
-                'after' => $user->only(['name', 'email', 'admin_permissions']),
+                'after' => $user->only(['name', 'email', 'admin_permissions', 'theme_preference']),
                 'password_changed' => ! empty($validated['password']),
             ]
         );

@@ -45,6 +45,27 @@
                     </div>
 
                     <div class="rounded-lg bg-gray-50 p-4 ring-1 ring-inset ring-black/10">
+                        <h3 class="text-sm font-semibold text-gray-900">Display mode</h3>
+                        <p class="mt-1 text-xs text-gray-600">Choose the staff account theme preference.</p>
+                        @php($themePreference = old('theme_preference', (string) ($staffUser->theme_preference ?? 'light')))
+                        <div class="mt-3 flex flex-wrap items-center gap-4">
+                            <label class="inline-flex items-center gap-2 text-sm text-gray-900">
+                                <input type="radio" name="theme_preference" value="light"
+                                    {{ $themePreference === 'light' ? 'checked' : '' }}
+                                    class="h-4 w-4 border-black/30 text-gray-900 focus:ring-orange-500">
+                                <span>Light mode</span>
+                            </label>
+                            <label class="inline-flex items-center gap-2 text-sm text-gray-900">
+                                <input type="radio" name="theme_preference" value="dark"
+                                    {{ $themePreference === 'dark' ? 'checked' : '' }}
+                                    class="h-4 w-4 border-black/30 text-gray-900 focus:ring-orange-500">
+                                <span>Dark mode</span>
+                            </label>
+                        </div>
+                        <x-input-error class="mt-3" :messages="$errors->get('theme_preference')" />
+                    </div>
+
+                    <div class="rounded-lg bg-gray-50 p-4 ring-1 ring-inset ring-black/10">
                         <h3 class="text-sm font-semibold text-gray-900">Module access</h3>
                         <p class="mt-1 text-xs text-gray-600">Select what this staff member can view and edit.</p>
 

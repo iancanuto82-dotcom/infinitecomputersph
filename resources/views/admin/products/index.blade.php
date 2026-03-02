@@ -77,7 +77,7 @@
                 </div>
             @endif
 
-            <form method="GET" action="{{ route('admin.products.index') }}"
+            <form id="products-filter-form" method="GET" action="{{ route('admin.products.index') }}"
                 class="mb-4 rounded-2xl bg-white p-4 sm:p-5 shadow-sm ring-1 ring-black/10">
                 <div class="products-filter-row">
                     <div class="products-filter-search">
@@ -118,10 +118,6 @@
                             class="inline-flex h-[42px] min-w-[78px] items-center justify-center rounded-md bg-white px-3 text-sm font-medium text-gray-900 shadow-sm ring-1 ring-inset ring-black/15 hover:bg-orange-50">
                             Reset
                         </a>
-                        <button type="submit"
-                            class="inline-flex h-[42px] min-w-[78px] items-center justify-center rounded-md bg-gray-900 px-4 text-sm font-medium text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
-                            Apply
-                        </button>
                     </div>
                 </div>
 
@@ -327,6 +323,43 @@
     </style>
 
     <script>
+        (() => {
+            const form = document.getElementById('products-filter-form');
+            const searchInput = document.getElementById('search');
+            const categorySelect = document.getElementById('category');
+            const stockSelect = document.getElementById('stock');
+
+            if (!form || !searchInput || !categorySelect || !stockSelect) return;
+
+            let searchTimer = null;
+
+            const submitFilters = () => {
+                const currentParams = new URLSearchParams(window.location.search);
+                currentParams.delete('page');
+
+                const nextParams = new URLSearchParams(new FormData(form));
+                nextParams.delete('page');
+
+                if (nextParams.toString() === currentParams.toString()) return;
+                form.submit();
+            };
+
+            categorySelect.addEventListener('change', submitFilters);
+            stockSelect.addEventListener('change', submitFilters);
+
+            searchInput.addEventListener('input', () => {
+                window.clearTimeout(searchTimer);
+                searchTimer = window.setTimeout(submitFilters, 320);
+            });
+
+            searchInput.addEventListener('keydown', (event) => {
+                if (event.key !== 'Enter') return;
+                event.preventDefault();
+                window.clearTimeout(searchTimer);
+                submitFilters();
+            });
+        })();
+
         (() => {
             const input = document.getElementById('product_import_file');
             const label = document.getElementById('product_import_file_name');

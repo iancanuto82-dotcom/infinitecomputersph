@@ -103,12 +103,16 @@
                                                 class="absolute z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-black/10 bg-white shadow-lg">
                                                 <template x-for="(p, pIdx) in filteredProducts(row)" :key="p.id">
                                                     <button type="button"
-                                                        class="block w-full px-3 py-2 text-left text-sm hover:bg-orange-50"
-                                                        :class="pIdx === row.searchCursor ? 'bg-orange-50' : ''"
+                                                        class="block w-full px-3 py-2 text-left text-sm transition-colors"
+                                                        :class="productOptionClass(p.stock, pIdx === row.searchCursor)"
                                                         @mousedown.prevent="selectProduct(row, p)">
-                                                        <div class="font-medium text-gray-900" x-text="p.name"></div>
-                                                        <div class="mt-0.5 text-xs text-gray-600 tabular-nums">
-                                                            &#8369;<span x-text="formatMoney(p.price)"></span> Â· Stock: <span :class="stockToneClass(p.stock)" x-text="p.stock"></span>
+                                                        <div class="font-medium"
+                                                            :class="outOfStock(p.stock) ? 'text-rose-100' : 'text-gray-900'"
+                                                            x-text="p.name"></div>
+                                                        <div class="mt-0.5 text-xs tabular-nums"
+                                                            :class="stockMetaClass(p.stock)">
+                                                            &#8369;<span x-text="formatMoney(p.price)"></span> Â· Stock:
+                                                            <span x-text="p.stock"></span>
                                                         </div>
                                                     </button>
                                                 </template>
@@ -398,6 +402,21 @@
                     if (qty <= 3) return 'text-amber-600'
                     return 'text-emerald-600'
                 },
+                outOfStock(stock) {
+                    const qty = Number(stock ?? 0)
+                    return !Number.isFinite(qty) || qty <= 0
+                },
+                productOptionClass(stock, isActive = false) {
+                    const out = this.outOfStock(stock)
+                    if (out && isActive) return 'bg-rose-900/55 hover:bg-rose-900/60'
+                    if (out) return 'bg-rose-900/45 hover:bg-rose-900/55'
+                    if (isActive) return 'bg-orange-50'
+                    return 'hover:bg-orange-50'
+                },
+                stockMetaClass(stock) {
+                    if (this.outOfStock(stock)) return 'font-semibold text-rose-300'
+                    return 'text-gray-600'
+                },
                 openProductSearch(row) {
                     row.searchOpen = true
                     row.searchCursor = 0
@@ -494,6 +513,10 @@
                 rowHasValidProduct(row) {
                     return !!this.productById(row?.product_id)
                 },
+                rowIsOutOfStock(row) {
+                    if (!this.rowHasValidProduct(row)) return false
+                    return this.outOfStock(this.productStock(row.product_id))
+                },
                 rowProductError(row) {
                     const typed = String(row?.search ?? '').trim()
                     const hasProduct = this.rowHasValidProduct(row)
@@ -506,11 +529,16 @@
                         return 'Select a product or remove this item row.'
                     }
 
+                    if (this.rowIsOutOfStock(row)) {
+                        return 'Selected product is out of stock.'
+                    }
+
                     return ''
                 },
                 submitBlockReasons() {
                     const invalidProductRows = []
                     const unknownProductRows = []
+                    const outOfStockRows = []
 
                     this.rows.forEach((row, idx) => {
                         const rowNumber = idx + 1
@@ -522,6 +550,11 @@
                             if (typed !== '') {
                                 unknownProductRows.push(rowNumber)
                             }
+                            return
+                        }
+
+                        if (this.rowIsOutOfStock(row)) {
+                            outOfStockRows.push(rowNumber)
                         }
                     })
 
@@ -532,6 +565,10 @@
 
                     if (unknownProductRows.length > 0) {
                         reasons.push(`Some typed products do not exist (row${unknownProductRows.length > 1 ? 's' : ''}: ${unknownProductRows.join(', ')}).`)
+                    }
+
+                    if (outOfStockRows.length > 0) {
+                        reasons.push(`Out-of-stock product selected (row${outOfStockRows.length > 1 ? 's' : ''}: ${outOfStockRows.join(', ')}).`)
                     }
 
                     return reasons
