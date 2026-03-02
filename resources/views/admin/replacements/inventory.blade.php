@@ -103,7 +103,7 @@
                             <tbody class="divide-y divide-black/10">
                                 @foreach ($rmaInventory as $row)
                                     @php($typeLabel = $row->type === 'warranty' ? 'Warranty' : 'Replacement')
-                                    <tr class="even:bg-zinc-50 hover:bg-gray-50/90">
+                                    <tr class="replacement-record-row even:bg-zinc-50 hover:bg-gray-50/90">
                                         <td class="px-6 py-3 font-medium text-gray-900">{{ $row->product_name }}</td>
                                         <td class="px-6 py-3">
                                             <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium {{ $row->type === 'warranty' ? 'bg-cyan-50 text-cyan-700 ring-1 ring-cyan-200' : 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' }}">
@@ -143,4 +143,3 @@
         }
     </style>
 </x-app-layout>
-

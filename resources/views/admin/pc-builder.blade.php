@@ -166,19 +166,19 @@
                                 <label class="block text-sm font-medium text-gray-900" for="quotation_name">Quotation name</label>
                                 <input id="quotation_name" type="text" x-model.trim="quotationName"
                                     placeholder="Optional title"
-                                    class="mt-1 block w-full rounded-md border-black/20 shadow-sm focus:border-orange-500 focus:ring-orange-500">
+                                    class="mt-1 block w-full rounded-md border-black/20 bg-white text-gray-900 shadow-sm focus:border-orange-500 focus:ring-orange-500">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-900" for="customer_name">Customer name <span class="text-rose-700">*</span></label>
                                 <input id="customer_name" type="text" x-model.trim="customerName"
                                     placeholder="Required"
-                                    class="mt-1 block w-full rounded-md border-black/20 shadow-sm focus:border-orange-500 focus:ring-orange-500" required>
+                                    class="mt-1 block w-full rounded-md border-black/20 bg-white text-gray-900 shadow-sm focus:border-orange-500 focus:ring-orange-500" required>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-900" for="customer_contact">Contact</label>
                                 <input id="customer_contact" type="text" x-model.trim="customerContact"
                                     placeholder="Phone / Email (optional)"
-                                    class="mt-1 block w-full rounded-md border-black/20 shadow-sm focus:border-orange-500 focus:ring-orange-500">
+                                    class="mt-1 block w-full rounded-md border-black/20 bg-white text-gray-900 shadow-sm focus:border-orange-500 focus:ring-orange-500">
                             </div>
                         </div>
 
@@ -196,7 +196,7 @@
                                     </thead>
                                     <template x-for="section in componentSections" :key="section.key">
                                         <tbody class="border-b border-black/10">
-                                            <tr class="bg-gray-50/90" :class="{'print-hide-empty': !sectionHasSelection(section)}">
+                                            <tr class="bg-gray-50" :class="{'print-hide-empty': !sectionHasSelection(section)}">
                                                 <td class="px-6 py-4" colspan="5">
                                                     <div class="flex items-center justify-between gap-4">
                                                         <div class="flex items-center gap-2 min-w-0">
@@ -213,7 +213,7 @@
                                                     <td class="px-6 py-4">
                                                         <div class="no-print">
                                                             <label class="sr-only" :for="`single_${section.key}`" x-text="`Select ${section.label}`"></label>
-                                                            <select class="block w-full rounded-md border-black/20 shadow-sm focus:border-orange-500 focus:ring-orange-500"
+                                                            <select class="block w-full rounded-md border-black/20 bg-white text-gray-900 shadow-sm focus:border-orange-500 focus:ring-orange-500"
                                                                 :id="`single_${section.key}`"
                                                                 x-model="single[section.key].product_id"
                                                                 @change="onSingleChange(section.key)">
@@ -255,7 +255,7 @@
                                                     </td>
                                                     <td class="px-6 py-4 text-right border-l border-black/10">
                                                         <input type="number" min="0" step="1" inputmode="numeric"
-                                                            class="w-20 rounded-md border-black/20 text-right shadow-sm focus:border-orange-500 focus:ring-orange-500 no-print"
+                                                            class="w-20 rounded-md border-black/20 bg-white text-right text-gray-900 shadow-sm focus:border-orange-500 focus:ring-orange-500 no-print"
                                                             x-model.number="single[section.key].qty"
                                                             @input="normalizeSingleQty(section.key)">
                                                         <span class="tabular-nums print-only-inline" x-text="single[section.key].product_id ? single[section.key].qty : 0"></span>
@@ -280,7 +280,7 @@
                                                             <td class="px-6 py-4">
                                                                 <div class="no-print">
                                                                     <label class="sr-only" :for="`multi_${section.key}_${row.uid}`" x-text="`Select ${section.label}`"></label>
-                                                                    <select class="block w-full rounded-md border-black/20 shadow-sm focus:border-orange-500 focus:ring-orange-500"
+                                                                    <select class="block w-full rounded-md border-black/20 bg-white text-gray-900 shadow-sm focus:border-orange-500 focus:ring-orange-500"
                                                                         :id="`multi_${section.key}_${row.uid}`"
                                                                         x-model="row.product_id"
                                                                         @change="onRowChange(section.key, row.uid)">
@@ -322,7 +322,7 @@
                                                         </td>
                                                         <td class="px-6 py-4 text-right border-l border-black/10">
                                                             <input type="number" min="0" step="1" inputmode="numeric"
-                                                                class="w-20 rounded-md border-black/20 text-right shadow-sm focus:border-orange-500 focus:ring-orange-500 no-print"
+                                                                class="w-20 rounded-md border-black/20 bg-white text-right text-gray-900 shadow-sm focus:border-orange-500 focus:ring-orange-500 no-print"
                                                                 x-model.number="row.qty"
                                                                 @input="normalizeRowQty(section.key, row.uid)">
                                                             <span class="tabular-nums print-only-inline" x-text="row.product_id ? row.qty : 0"></span>
@@ -435,7 +435,7 @@
                             <div class="rounded-xl bg-gray-50 px-4 py-4 ring-1 ring-inset ring-black/10">
                                 <div class="text-sm font-medium text-gray-900">Notes</div>
                                 <textarea rows="4" x-model.trim="notes"
-                                    class="mt-2 block w-full rounded-md border-black/20 shadow-sm focus:border-orange-500 focus:ring-orange-500"
+                                    class="mt-2 block w-full rounded-md border-black/20 bg-white text-gray-900 shadow-sm focus:border-orange-500 focus:ring-orange-500"
                                     placeholder="Optional terms, warranty, inclusions..."></textarea>
                             </div>
 
@@ -445,7 +445,7 @@
                                     <div class="mt-1 flex items-center gap-2">
                                         <span class="text-sm text-gray-600">&#8369;</span>
                                         <input id="labor_fee" type="number" step="0.01" min="0" x-model.number="laborFee"
-                                            class="block w-full rounded-md border-black/20 shadow-sm focus:border-orange-500 focus:ring-orange-500">
+                                            class="block w-full rounded-md border-black/20 bg-white text-gray-900 shadow-sm focus:border-orange-500 focus:ring-orange-500">
                                     </div>
                                 </div>
 
@@ -453,12 +453,12 @@
                                     <label class="block text-sm font-medium text-gray-900" for="discount">Discount</label>
                                     <div class="mt-1 grid grid-cols-3 gap-2">
                                         <select x-model="discountType"
-                                            class="col-span-1 rounded-md border-black/20 shadow-sm focus:border-orange-500 focus:ring-orange-500">
+                                            class="col-span-1 rounded-md border-black/20 bg-white text-gray-900 shadow-sm focus:border-orange-500 focus:ring-orange-500">
                                             <option value="amount">&#8369;</option>
                                             <option value="percent">%</option>
                                         </select>
                                         <input id="discount" type="number" step="0.01" min="0" x-model.number="discount"
-                                            class="col-span-2 block w-full rounded-md border-black/20 shadow-sm focus:border-orange-500 focus:ring-orange-500">
+                                            class="col-span-2 block w-full rounded-md border-black/20 bg-white text-gray-900 shadow-sm focus:border-orange-500 focus:ring-orange-500">
                                     </div>
                                 </div>
                             </div>
@@ -537,7 +537,7 @@
                                     </div>
 
                                     <table class="min-w-full text-sm">
-                                        <thead class="text-left text-xs font-semibold text-gray-600 bg-gray-50/90">
+                                        <thead class="text-left text-xs font-semibold text-gray-600 bg-gray-50">
                                             <tr>
                                                 <th class="px-5 py-2">Item</th>
                                                 <th class="px-5 py-2 text-right">Qty</th>

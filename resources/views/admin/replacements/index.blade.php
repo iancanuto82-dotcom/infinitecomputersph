@@ -199,7 +199,7 @@
                             <tbody class="divide-y divide-black/10">
                                 @foreach ($items as $item)
                                     @php($typeLabel = $item->type === 'warranty' ? 'Warranty' : 'Replacement')
-                                    <tr class="even:bg-zinc-50 hover:bg-gray-50/90">
+                                    <tr class="replacement-record-row even:bg-zinc-50 hover:bg-gray-50/90">
                                         <td class="px-6 py-3 whitespace-nowrap text-gray-700">
                                             {{ optional($item->processed_at)->format('M j, Y h:i A') ?? '-' }}
                                         </td>

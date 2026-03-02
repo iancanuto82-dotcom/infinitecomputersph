@@ -332,8 +332,49 @@
             if (!form || !searchInput || !categorySelect || !stockSelect) return;
 
             let searchTimer = null;
+            const searchFocusStateKey = 'products_filter_search_focus_state';
 
-            const submitFilters = () => {
+            const restoreSearchFocus = () => {
+                try {
+                    const raw = window.sessionStorage.getItem(searchFocusStateKey);
+                    if (!raw) return;
+
+                    const state = JSON.parse(raw);
+                    if (!state || state.path !== window.location.pathname) return;
+                    if (String(state.query ?? '') !== String(searchInput.value ?? '')) return;
+
+                    searchInput.focus({ preventScroll: true });
+                    const fallbackCaret = String(searchInput.value ?? '').length;
+                    const caret = Number.isFinite(Number(state.caret))
+                        ? Number(state.caret)
+                        : fallbackCaret;
+                    const clampedCaret = Math.max(0, Math.min(caret, fallbackCaret));
+                    searchInput.setSelectionRange(clampedCaret, clampedCaret);
+                } catch (_) {
+                    // Ignore session restore failures and continue without focus restore.
+                } finally {
+                    window.sessionStorage.removeItem(searchFocusStateKey);
+                }
+            };
+
+            const persistSearchFocus = () => {
+                try {
+                    const caret = Number.isInteger(searchInput.selectionStart)
+                        ? Number(searchInput.selectionStart)
+                        : String(searchInput.value ?? '').length;
+                    window.sessionStorage.setItem(searchFocusStateKey, JSON.stringify({
+                        path: window.location.pathname,
+                        query: String(searchInput.value ?? ''),
+                        caret,
+                    }));
+                } catch (_) {
+                    // Ignore session persistence failures.
+                }
+            };
+
+            restoreSearchFocus();
+
+            const submitFilters = ({ preserveSearchFocus = false } = {}) => {
                 const currentParams = new URLSearchParams(window.location.search);
                 currentParams.delete('page');
 
@@ -341,6 +382,7 @@
                 nextParams.delete('page');
 
                 if (nextParams.toString() === currentParams.toString()) return;
+                if (preserveSearchFocus) persistSearchFocus();
                 form.submit();
             };
 
@@ -349,12 +391,19 @@
 
             searchInput.addEventListener('input', () => {
                 window.clearTimeout(searchTimer);
-                searchTimer = window.setTimeout(submitFilters, 320);
+                searchTimer = window.setTimeout(() => {
+                    submitFilters({ preserveSearchFocus: true });
+                }, 320);
             });
 
             searchInput.addEventListener('keydown', (event) => {
                 if (event.key !== 'Enter') return;
                 event.preventDefault();
+                window.clearTimeout(searchTimer);
+                submitFilters({ preserveSearchFocus: true });
+            });
+
+            searchInput.addEventListener('blur', () => {
                 window.clearTimeout(searchTimer);
                 submitFilters();
             });

@@ -663,14 +663,16 @@
         position: fixed;
         top: 1rem;
         right: 1rem;
-        z-index: 80;
+        z-index: 120;
         display: flex;
         align-items: flex-start;
         gap: 0.75rem;
         width: min(26rem, calc(100vw - 2rem));
         padding: 0.85rem 0.9rem;
         border-radius: 0.9rem;
-        border: 1px solid transparent;
+        border: 1px solid rgb(203 213 225);
+        background: rgb(255 255 255);
+        color: rgb(15 23 42);
         box-shadow: 0 14px 32px rgba(15, 23, 42, 0.16);
         opacity: 1 !important;
         background-clip: padding-box;
@@ -684,26 +686,29 @@
     }
 
     .admin-toast--success {
-        border-color: rgb(134 239 172);
-        background: rgb(220 252 231);
-        color: rgb(22 101 52);
+        border-color: rgb(134 239 172) !important;
+        background: rgb(220 252 231) !important;
+        color: rgb(22 101 52) !important;
     }
 
     .admin-toast--error {
-        border-color: rgb(254 202 202);
-        background: rgb(254 242 242);
-        color: rgb(153 27 27);
+        border-color: rgb(254 202 202) !important;
+        background: rgb(254 242 242) !important;
+        color: rgb(153 27 27) !important;
     }
 
     .admin-toast--warning {
-        border-color: rgb(253 230 138);
-        background: rgb(254 249 195);
-        color: rgb(133 77 14);
+        border-color: rgb(253 230 138) !important;
+        background: rgb(254 249 195) !important;
+        color: rgb(133 77 14) !important;
     }
 
     .admin-toast__content {
         min-width: 0;
         flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
     }
 
     .admin-toast__badge {
@@ -720,7 +725,7 @@
     }
 
     .admin-toast__message {
-        margin-top: 0.5rem;
+        margin-top: 0;
         font-size: 0.88rem;
         line-height: 1.4;
         overflow-wrap: anywhere;
@@ -747,6 +752,11 @@
     .admin-toast__close:focus-visible {
         outline: 2px solid rgba(15, 23, 42, 0.55);
         outline-offset: 2px;
+    }
+
+    /* Global zebra rows for admin-style list tables */
+    tbody.divide-y.divide-black\/10 > tr:nth-child(even) {
+        background-color: rgba(244, 244, 245, 0.72);
     }
 
     @keyframes admin-toast-in {
@@ -837,6 +847,14 @@
     body.admin-theme-dark .hover\:bg-gray-50:hover,
     body.admin-theme-dark .hover\:bg-slate-100:hover {
         background-color: rgba(30, 41, 59, 0.7) !important;
+    }
+
+    body.admin-theme-dark tbody.divide-y.divide-black\/10 > tr:nth-child(even) {
+        background-color: rgba(30, 41, 59, 0.62) !important;
+    }
+
+    body.admin-theme-dark .even\:bg-zinc-50:nth-child(even) {
+        background-color: rgba(15, 23, 42, 0.62) !important;
     }
 
     body.admin-theme-dark .hover\:bg-orange-50:hover,
