@@ -3,6 +3,7 @@
 <head>
     @php
         $siteName = (string) config('app.name', 'Infinite Computers');
+        $appLogo = (string) config('app.logo_url', 'https://i.imgur.com/MCfboy4.png');
         $pageTitle = trim((string) $__env->yieldContent('title'));
         $metaDescription = trim((string) $__env->yieldContent('meta_description'));
         $ogTitle = trim((string) $__env->yieldContent('og_title'));
@@ -12,7 +13,7 @@
         $metaDescription = $metaDescription !== '' ? $metaDescription : 'Browse computer parts and pricing from Infinite Computers.';
         $ogTitle = $ogTitle !== '' ? $ogTitle : $fullTitle;
         $ogDescription = $ogDescription !== '' ? $ogDescription : $metaDescription;
-        $ogImage = $ogImage !== '' ? $ogImage : 'https://i.imgur.com/x0GIl1C.png';
+        $ogImage = $ogImage !== '' ? $ogImage : $appLogo;
     @endphp
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,9 +33,9 @@
     <link rel="preconnect" href="https://i.imgur.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/png" href="https://i.imgur.com/x0GIl1C.png">
-    <link rel="apple-touch-icon" href="https://i.imgur.com/x0GIl1C.png">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="{{ $appLogo }}">
+    <link rel="apple-touch-icon" href="{{ $appLogo }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 @php
@@ -43,11 +44,17 @@
     $headerCategories = collect();
 
     try {
-        $headerCategories = \App\Models\Category::query()
-            ->select(['id', 'name', 'parent_id'])
-            ->orderByRaw('CASE WHEN parent_id IS NULL THEN 0 ELSE 1 END')
-            ->orderBy('name')
-            ->get();
+        $headerCategories = \Illuminate\Support\Facades\Cache::remember(
+            \App\Support\PublicCatalogCache::HEADER_NAVIGATION_KEY,
+            now()->addMinutes(30),
+            function () {
+                return \App\Models\Category::query()
+                    ->select(['id', 'name', 'parent_id'])
+                    ->orderByRaw('CASE WHEN parent_id IS NULL THEN 0 ELSE 1 END')
+                    ->orderBy('name')
+                    ->get();
+            }
+        );
     } catch (\Throwable $e) {
         $headerCategories = collect();
     }
@@ -63,23 +70,31 @@
     $headerFallbackProductsByCategory = collect();
 
     try {
-        $mainCategoryIdsWithoutSubcategories = $headerMainCategories
-            ->filter(fn ($category) => $headerSubcategoriesByParent->get((int) $category->id, collect())->isEmpty())
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id)
-            ->filter()
-            ->values();
+        $headerFallbackProductsByCategory = \Illuminate\Support\Facades\Cache::remember(
+            \App\Support\PublicCatalogCache::HEADER_FALLBACK_PRODUCTS_KEY,
+            now()->addMinutes(5),
+            function () use ($headerMainCategories, $headerSubcategoriesByParent) {
+                $mainCategoryIdsWithoutSubcategories = $headerMainCategories
+                    ->filter(fn ($category) => $headerSubcategoriesByParent->get((int) $category->id, collect())->isEmpty())
+                    ->pluck('id')
+                    ->map(fn ($id) => (int) $id)
+                    ->filter()
+                    ->values();
 
-        if ($mainCategoryIdsWithoutSubcategories->isNotEmpty()) {
-            $headerFallbackProductsByCategory = \App\Models\Product::query()
-                ->select(['id', 'name', 'price', 'category_id'])
-                ->where('is_active', true)
-                ->whereIn('category_id', $mainCategoryIdsWithoutSubcategories->all())
-                ->orderBy('name')
-                ->get()
-                ->groupBy(fn ($product) => (int) $product->category_id)
-                ->map(fn ($products) => $products->take(8)->values());
-        }
+                if ($mainCategoryIdsWithoutSubcategories->isEmpty()) {
+                    return collect();
+                }
+
+                return \App\Models\Product::query()
+                    ->select(['id', 'name', 'price', 'category_id'])
+                    ->where('is_active', true)
+                    ->whereIn('category_id', $mainCategoryIdsWithoutSubcategories->all())
+                    ->orderBy('name')
+                    ->get()
+                    ->groupBy(fn ($product) => (int) $product->category_id)
+                    ->map(fn ($products) => $products->take(8)->values());
+            }
+        );
     } catch (\Throwable $e) {
         $headerFallbackProductsByCategory = collect();
     }
@@ -94,12 +109,12 @@
                     <div class="grid grid-cols-1 items-center gap-3 py-3 md:grid-cols-[1fr_minmax(0,42rem)_1fr]">
                         <a href="{{ route('home') }}" class="hidden items-center gap-3 md:inline-flex md:justify-self-start">
                             <span class="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-white/20 ring-1 ring-white/30">
-                                <img src="https://i.imgur.com/x0GIl1C.png" alt="{{ config('app.name') }} logo"
+                                <img src="{{ $appLogo }}" alt="{{ config('app.name') }} logo"
                                     class="h-10 w-10 object-contain" loading="lazy" referrerpolicy="no-referrer"
                                     x-show="!logoFailed" x-on:error="logoFailed = true">
                                 <span x-cloak x-show="logoFailed" class="text-base font-semibold text-white">I</span>
                             </span>
-                            <span class="text-lg font-semibold tracking-tight text-white">Infinite Computers</span>
+                            <span class="text-lg font-semibold tracking-tight uppercase text-white">{{ $siteName }}</span>
                         </a>
 
                         <form method="GET" action="{{ route('pricelist') }}" class="relative w-full">
@@ -319,7 +334,7 @@
                     <section class="space-y-4">
                         <a href="{{ route('home') }}" class="inline-flex items-center gap-3">
                             <span class="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-white/15 ring-1 ring-white/25">
-                                <img src="https://i.imgur.com/x0GIl1C.png" alt="{{ config('app.name') }} logo"
+                                <img src="{{ $appLogo }}" alt="{{ config('app.name') }} logo"
                                     class="h-10 w-10 object-contain" loading="lazy" referrerpolicy="no-referrer">
                             </span>
                             <span class="text-lg font-semibold tracking-tight text-white">{{ config('app.name') }}</span>

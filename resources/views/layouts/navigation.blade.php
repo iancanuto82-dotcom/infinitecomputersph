@@ -1,5 +1,6 @@
 @php
     $user = auth()->user();
+    $appLogo = (string) config('app.logo_url', 'https://i.imgur.com/MCfboy4.png');
     $isAdminUser = \App\Support\AdminAccess::isAdmin($user);
     $isAdminArea = request()->routeIs('admin.*') || request()->is('admin*');
     $shouldUseSideNav = $isAdminUser && ($isAdminArea || request()->routeIs('dashboard'));
@@ -89,7 +90,7 @@
         <aside class="flex h-full flex-col bg-white text-slate-700 transition-all duration-200">
             <div class="border-b border-slate-200 py-4" :class="collapsed ? 'px-2' : 'px-3'">
                 <a href="{{ $dashboardHref }}" class="flex items-center gap-3 rounded-xl bg-slate-50 ring-1 ring-slate-200" :class="collapsed ? 'w-full justify-center px-2 py-2' : 'px-2.5 py-2.5'">
-                    <img src="https://i.imgur.com/x0GIl1C.png" alt="{{ config('app.name') }} logo"
+                    <img src="{{ $appLogo }}" alt="{{ config('app.name') }} logo"
                         class="h-9 w-9 shrink-0 object-contain"
                         loading="lazy"
                         referrerpolicy="no-referrer"
@@ -108,7 +109,7 @@
                         x-transition:leave-end="opacity-0 -translate-x-2"
                         class="min-w-0">
                         <div class="truncate text-[0.68rem] uppercase tracking-[0.14em] text-slate-500">Admin Panel</div>
-                        <div class="truncate text-sm font-semibold text-slate-900">Infinite Computers</div>
+                        <div class="truncate text-sm font-semibold text-slate-900">{{ config('app.name') }}</div>
                     </div>
                 </a>
             </div>
@@ -255,7 +256,7 @@
                 <div class="flex">
                     <div class="shrink-0 flex items-center">
                         <a href="{{ $dashboardHref }}" class="inline-flex items-center justify-center rounded-md p-1">
-                            <img src="https://i.imgur.com/x0GIl1C.png" alt="{{ config('app.name') }} logo"
+                            <img src="{{ $appLogo }}" alt="{{ config('app.name') }} logo"
                                 class="h-9 w-9 object-contain"
                                 loading="lazy"
                                 referrerpolicy="no-referrer"

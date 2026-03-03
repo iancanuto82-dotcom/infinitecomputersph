@@ -11,6 +11,7 @@ use App\Models\SaleItem;
 use App\Models\SalePayment;
 use App\Support\AdminAccess;
 use App\Support\AuditLogger;
+use App\Support\PublicCatalogCache;
 use App\Support\SalePaymentMode;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\QueryException;
@@ -295,6 +296,8 @@ class SalesController extends Controller
                 foreach ($qtyByProductId as $productId => $qty) {
                     Product::query()->whereKey($productId)->decrement('stock', (int) $qty);
                 }
+
+                $this->forgetPublicCatalogCaches();
             }
 
             if ($amountPaid > 0) {
@@ -446,6 +449,8 @@ class SalesController extends Controller
                 foreach ($qtyByProductId as $productId => $qty) {
                     Product::query()->whereKey($productId)->decrement('stock', (int) $qty);
                 }
+
+                $this->forgetPublicCatalogCaches();
             }
 
             if ($grandTotal > 0) {
@@ -642,6 +647,10 @@ class SalesController extends Controller
                 $sale->save();
             }
 
+            if ($restockedUnits > 0) {
+                $this->forgetPublicCatalogCaches();
+            }
+
             $this->syncSalePaymentSnapshot($sale);
             if ((float) ($sale->amount_paid ?? 0) <= 0.00001 && $sale->refunded_at === null) {
                 $sale->refunded_at = now();
@@ -677,6 +686,10 @@ class SalesController extends Controller
             if ($restockRequested && $sale->stock_restocked_at === null) {
                 $restockedUnits = $this->restockSaleInventory($sale);
                 $sale->stock_restocked_at = now();
+            }
+
+            if ($restockedUnits > 0) {
+                $this->forgetPublicCatalogCaches();
             }
 
             $sale->cancelled_at = now();
@@ -870,5 +883,10 @@ class SalesController extends Controller
             'pgsql' => "to_char({$column}, 'YYYY')",
             default => "DATE_FORMAT({$column}, '%Y')",
         };
+    }
+
+    private function forgetPublicCatalogCaches(): void
+    {
+        PublicCatalogCache::forgetAll();
     }
 }

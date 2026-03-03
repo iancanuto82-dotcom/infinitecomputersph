@@ -10,11 +10,11 @@ use App\Models\Product;
 use App\Models\User;
 use App\Support\AdminAccess;
 use App\Support\AuditLogger;
+use App\Support\PublicCatalogCache;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -1147,9 +1147,6 @@ class AuditLogController extends Controller
 
     private function forgetPublicCatalogCaches(): void
     {
-        Cache::forget('public_categories_list_v1');
-        Cache::forget('public_categories_list_v2');
-        Cache::forget('public_landing_data_v1');
-        Cache::forget('public_landing_data_v2');
+        PublicCatalogCache::forgetAll();
     }
 }

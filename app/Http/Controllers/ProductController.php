@@ -7,6 +7,7 @@ use App\Models\CarouselSlide;
 use App\Models\Category;
 use App\Models\FeaturedBrand;
 use App\Models\Product;
+use App\Support\PublicCatalogCache;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -16,7 +17,7 @@ class ProductController extends Controller
 {
     public function landing()
     {
-        $landingData = Cache::remember('public_landing_data_v2', now()->addMinutes(10), function (): array {
+        $landingData = Cache::remember(PublicCatalogCache::LANDING_DATA_KEY, now()->addMinutes(10), function (): array {
             $carouselSlides = CarouselSlide::query()
                 ->select(['id', 'image_path', 'image_url', 'sort_order'])
                 ->where('is_active', true)
@@ -67,7 +68,7 @@ class ProductController extends Controller
             $sort = 'name_asc';
         }
 
-        $categories = Cache::remember('public_categories_list_v2', now()->addMinutes(30), function () {
+        $categories = Cache::remember(PublicCatalogCache::CATEGORIES_LIST_KEY, now()->addMinutes(30), function () {
             return Category::query()
                 ->orderBy('name')
                 ->get(['id', 'name', 'parent_id']);
@@ -103,122 +104,125 @@ class ProductController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        $builderProducts = Product::query()
-            ->select(['id', 'name', 'image_path', 'image_url', 'price', 'stock', 'category_id'])
-            ->with('category:id,name,parent_id')
-            ->where('is_active', true)
-            ->where('stock', '>', 0)
-            ->orderBy('name')
-            ->get();
+        $builderCategories = Cache::remember(PublicCatalogCache::BUILDER_CATEGORIES_KEY, now()->addMinutes(5), function () use ($categories): array {
+            $builderProducts = Product::query()
+                ->select(['id', 'name', 'image_path', 'image_url', 'price', 'stock', 'category_id'])
+                ->with('category:id,name,parent_id')
+                ->where('is_active', true)
+                ->where('stock', '>', 0)
+                ->orderBy('name')
+                ->get();
 
-        $builderSections = [
-            ['key' => 'processor', 'name' => 'Processor', 'match' => ['processor', 'cpu', 'ryzen', 'intel', 'athlon', 'pentium', 'celeron', 'core i', 'xeon'], 'exclude' => ['cooler', 'fan', 'aio', 'heatsink', 'motherboard', 'mobo', 'chipset', 'socket', 'lga', 'am4', 'am5', 'h610', 'h510', 'h410', 'h310', 'b450', 'b550', 'b660', 'b760', 'a320', 'a520', 'x570', 'z690', 'z790']],
-            ['key' => 'cpu_cooler', 'name' => 'CPU Cooler', 'match' => ['cpu cooler', 'aio', 'liquid cooler', 'radiator', 'air cooler', 'cooling'], 'exclude' => ['case fan', 'fan hub', 'keyboard', 'mouse', 'ram', 'memory', 'ddr', '3200mhz', '3600mhz', 'cl16', 'cl18', 'cl22', 'extension cable', 'cable set', 'laptop cooler', 'mini laptop cooler', 'laptop', 'notebook']],
-            ['key' => 'motherboard', 'name' => 'Motherboard', 'match' => ['motherboard', 'mobo', 'mainboard', 'h610', 'h510', 'h410', 'h310', 'b450', 'b550', 'b650', 'b660', 'b760', 'a320', 'a520', 'x570', 'z690', 'z790'], 'exclude' => ['processor', 'cpu', 'ryzen', 'intel core', 'athlon', 'pentium', 'celeron', 'xeon', 'cooler', 'aio', 'liquid cooler', 'fan', 'heatsink', 'ram', 'memory', 'ssd', 'hdd', 'nvme', 'powersupply', 'power supply', 'psu', 'case', 'chassis', 'extension cable', 'cable set']],
-            ['key' => 'desktop_ram', 'name' => 'RAM', 'match' => ['desktop ram', 'ram', 'memory', 'ddr'], 'exclude' => ['laptop', 'notebook', 'sodimm', 'so-dimm', 'so dimm', 'processor', 'cpu', 'ryzen', 'intel', 'athlon', 'pentium', 'celeron', 'xeon', 'motherboard', 'mobo', 'h610', 'h510', 'h410', 'h310', 'b450', 'b550', 'b650', 'b660', 'b760', 'a320', 'a520', 'x570', 'z690', 'z790', 'cooler', 'aio', 'liquid', 'radiator', 'fan', 'powersupply', 'power supply', 'psu', 'graphics', 'gpu', 'vga', 'ssd', 'hdd', 'nvme', 'm.2', 'case', 'chassis', 'atx', 'm-atx', 'matx', 'itx', 'e-atx', 'extension cable', 'cable set']],
-            ['key' => 'graphics_card', 'name' => 'Graphics Card', 'match' => ['graphics card', 'gpu', 'video card', 'vga'], 'exclude' => ['adapter', 'cable', 'converter']],
-            ['key' => 'storage', 'name' => 'Storage', 'match' => ['storage', 'ssd', 'hdd', 'nvme', 'm.2'], 'exclude' => ['caddy', 'enclosure', 'adapter', 'converter', 'cable', 'dock', 'tray', 'case']],
-            ['key' => 'power_supply', 'name' => 'Power Supply', 'match' => ['power supply', 'powersupply', 'psu'], 'exclude' => ['cable', 'extension', 'adapter', 'case with psu', 'w/ psu', 'w/psu']],
-            ['key' => 'fans', 'name' => 'Fans', 'match' => ['fan', 'fans', 'rgb fan'], 'exclude' => ['cpu cooler', 'aio', 'liquid', 'fan hub', 'fan controller', 'case with fan', 'w/ fan', 'm-atx case', 'matx case', 'case w/psu', 'case w/ psu', 'case with psu', 'w/psu+fans', 'keyboard', 'mechanical keyboard', 'fantech']],
-            ['key' => 'case', 'name' => 'Case', 'match' => ['case', 'chassis'], 'exclude' => ['case fan', 'case with psu', 'w/ psu', 'w/psu', 'case with fan', 'w/ fan']],
-            ['key' => 'keyboard', 'name' => 'Keyboard', 'match' => ['keyboard', 'keyb'], 'exclude' => []],
-            ['key' => 'mouse', 'name' => 'Mouse', 'match' => ['mouse'], 'exclude' => []],
-        ];
+            $builderSections = [
+                ['key' => 'processor', 'name' => 'Processor', 'match' => ['processor', 'cpu', 'ryzen', 'intel', 'athlon', 'pentium', 'celeron', 'core i', 'xeon'], 'exclude' => ['cooler', 'fan', 'aio', 'heatsink', 'motherboard', 'mobo', 'chipset', 'socket', 'lga', 'am4', 'am5', 'h610', 'h510', 'h410', 'h310', 'b450', 'b550', 'b660', 'b760', 'a320', 'a520', 'x570', 'z690', 'z790']],
+                ['key' => 'cpu_cooler', 'name' => 'CPU Cooler', 'match' => ['cpu cooler', 'aio', 'liquid cooler', 'radiator', 'air cooler', 'cooling'], 'exclude' => ['case fan', 'fan hub', 'keyboard', 'mouse', 'ram', 'memory', 'ddr', '3200mhz', '3600mhz', 'cl16', 'cl18', 'cl22', 'extension cable', 'cable set', 'laptop cooler', 'mini laptop cooler', 'laptop', 'notebook']],
+                ['key' => 'motherboard', 'name' => 'Motherboard', 'match' => ['motherboard', 'mobo', 'mainboard', 'h610', 'h510', 'h410', 'h310', 'b450', 'b550', 'b650', 'b660', 'b760', 'a320', 'a520', 'x570', 'z690', 'z790'], 'exclude' => ['processor', 'cpu', 'ryzen', 'intel core', 'athlon', 'pentium', 'celeron', 'xeon', 'cooler', 'aio', 'liquid cooler', 'fan', 'heatsink', 'ram', 'memory', 'ssd', 'hdd', 'nvme', 'powersupply', 'power supply', 'psu', 'case', 'chassis', 'extension cable', 'cable set']],
+                ['key' => 'desktop_ram', 'name' => 'RAM', 'match' => ['desktop ram', 'ram', 'memory', 'ddr'], 'exclude' => ['laptop', 'notebook', 'sodimm', 'so-dimm', 'so dimm', 'processor', 'cpu', 'ryzen', 'intel', 'athlon', 'pentium', 'celeron', 'xeon', 'motherboard', 'mobo', 'h610', 'h510', 'h410', 'h310', 'b450', 'b550', 'b650', 'b660', 'b760', 'a320', 'a520', 'x570', 'z690', 'z790', 'cooler', 'aio', 'liquid', 'radiator', 'fan', 'powersupply', 'power supply', 'psu', 'graphics', 'gpu', 'vga', 'ssd', 'hdd', 'nvme', 'm.2', 'case', 'chassis', 'atx', 'm-atx', 'matx', 'itx', 'e-atx', 'extension cable', 'cable set']],
+                ['key' => 'graphics_card', 'name' => 'Graphics Card', 'match' => ['graphics card', 'gpu', 'video card', 'vga'], 'exclude' => ['adapter', 'cable', 'converter']],
+                ['key' => 'storage', 'name' => 'Storage', 'match' => ['storage', 'ssd', 'hdd', 'nvme', 'm.2'], 'exclude' => ['caddy', 'enclosure', 'adapter', 'converter', 'cable', 'dock', 'tray', 'case']],
+                ['key' => 'power_supply', 'name' => 'Power Supply', 'match' => ['power supply', 'powersupply', 'psu'], 'exclude' => ['cable', 'extension', 'adapter', 'case with psu', 'w/ psu', 'w/psu']],
+                ['key' => 'fans', 'name' => 'Fans', 'match' => ['fan', 'fans', 'rgb fan'], 'exclude' => ['cpu cooler', 'aio', 'liquid', 'fan hub', 'fan controller', 'case with fan', 'w/ fan', 'm-atx case', 'matx case', 'case w/psu', 'case w/ psu', 'case with psu', 'w/psu+fans', 'keyboard', 'mechanical keyboard', 'fantech']],
+                ['key' => 'case', 'name' => 'Case', 'match' => ['case', 'chassis'], 'exclude' => ['case fan', 'case with psu', 'w/ psu', 'w/psu', 'case with fan', 'w/ fan']],
+                ['key' => 'keyboard', 'name' => 'Keyboard', 'match' => ['keyboard', 'keyb'], 'exclude' => []],
+                ['key' => 'mouse', 'name' => 'Mouse', 'match' => ['mouse'], 'exclude' => []],
+            ];
 
-        $builderCategories = collect($builderSections)
-            ->map(function (array $section) use ($builderProducts, $categories): array {
-                $sectionCategoryIds = $this->builderSectionCategoryIds($categories, (string) ($section['key'] ?? ''));
-                $usesSubcategoryGrouping = in_array((string) ($section['key'] ?? ''), ['processor', 'motherboard', 'desktop_ram'], true);
+            return collect($builderSections)
+                ->map(function (array $section) use ($builderProducts, $categories): array {
+                    $sectionCategoryIds = $this->builderSectionCategoryIds($categories, (string) ($section['key'] ?? ''));
+                    $usesSubcategoryGrouping = in_array((string) ($section['key'] ?? ''), ['processor', 'motherboard', 'desktop_ram'], true);
 
-                $products = $builderProducts
-                    ->filter(function (Product $product) use ($section, $sectionCategoryIds): bool {
-                        $categoryName = Str::lower((string) optional($product->category)->name);
-                        $productName = Str::lower((string) $product->name);
-                        $haystack = $categoryName.' '.$productName;
+                    $products = $builderProducts
+                        ->filter(function (Product $product) use ($section, $sectionCategoryIds): bool {
+                            $categoryName = Str::lower((string) optional($product->category)->name);
+                            $productName = Str::lower((string) $product->name);
+                            $haystack = $categoryName.' '.$productName;
 
-                        if (count($sectionCategoryIds) > 0) {
-                            if (! in_array((int) $product->category_id, $sectionCategoryIds, true)) {
-                                return false;
-                            }
-                        }
-
-                        if (($section['key'] ?? '') === 'desktop_ram') {
-                            $ramCategoryNeedles = ['ram', 'memory', 'ddr'];
-                            $categoryLooksLikeRam = collect($ramCategoryNeedles)->contains(
-                                fn (string $needle): bool => str_contains($categoryName, $needle)
-                            );
-
-                            $ramNameNeedles = ['ram', 'memory', 'ddr', 'pc3', 'pc4', 'dimm', 'udimm', 'gbx2', 'dual stick', 'mhz', 'rgb', 'cl', 'xmp'];
-                            $nameLooksLikeRam = collect($ramNameNeedles)->contains(
-                                fn (string $needle): bool => str_contains($productName, $needle)
-                            );
-
-                            if (! $categoryLooksLikeRam && ! $nameLooksLikeRam) {
-                                return false;
+                            if (count($sectionCategoryIds) > 0) {
+                                if (! in_array((int) $product->category_id, $sectionCategoryIds, true)) {
+                                    return false;
+                                }
                             }
 
-                            $cpuModelNeedles = ['amd r3', 'amd r5', 'amd r7', 'amd r9', 'intel i3', 'intel i5', 'intel i7', 'intel i9', 'ryzen', 'athlon', 'pentium', 'celeron', 'xeon'];
-                            $nameLooksLikeCpu = collect($cpuModelNeedles)->contains(
-                                fn (string $needle): bool => str_contains($productName, $needle)
+                            if (($section['key'] ?? '') === 'desktop_ram') {
+                                $ramCategoryNeedles = ['ram', 'memory', 'ddr'];
+                                $categoryLooksLikeRam = collect($ramCategoryNeedles)->contains(
+                                    fn (string $needle): bool => str_contains($categoryName, $needle)
+                                );
+
+                                $ramNameNeedles = ['ram', 'memory', 'ddr', 'pc3', 'pc4', 'dimm', 'udimm', 'gbx2', 'dual stick', 'mhz', 'rgb', 'cl', 'xmp'];
+                                $nameLooksLikeRam = collect($ramNameNeedles)->contains(
+                                    fn (string $needle): bool => str_contains($productName, $needle)
+                                );
+
+                                if (! $categoryLooksLikeRam && ! $nameLooksLikeRam) {
+                                    return false;
+                                }
+
+                                $cpuModelNeedles = ['amd r3', 'amd r5', 'amd r7', 'amd r9', 'intel i3', 'intel i5', 'intel i7', 'intel i9', 'ryzen', 'athlon', 'pentium', 'celeron', 'xeon'];
+                                $nameLooksLikeCpu = collect($cpuModelNeedles)->contains(
+                                    fn (string $needle): bool => str_contains($productName, $needle)
+                                );
+
+                                if ($nameLooksLikeCpu) {
+                                    return false;
+                                }
+                            }
+
+                            $matches = collect($section['match'])->contains(
+                                fn (string $needle): bool => str_contains($haystack, Str::lower($needle))
                             );
 
-                            if ($nameLooksLikeCpu) {
+                            if (! $matches) {
                                 return false;
                             }
-                        }
 
-                        $matches = collect($section['match'])->contains(
-                            fn (string $needle): bool => str_contains($haystack, Str::lower($needle))
-                        );
+                            $excluded = collect($section['exclude'])->contains(
+                                fn (string $needle): bool => str_contains($haystack, Str::lower($needle))
+                            );
 
-                        if (! $matches) {
-                            return false;
-                        }
-
-                        $excluded = collect($section['exclude'])->contains(
-                            fn (string $needle): bool => str_contains($haystack, Str::lower($needle))
-                        );
-
-                        return ! $excluded;
-                    })
-                    ->map(function (Product $product): array {
-                        return [
-                            'id' => (int) $product->id,
-                            'name' => (string) $product->name,
-                            'price' => (float) $product->price,
-                            'image' => $product->image_src,
-                            'subcategory' => (string) optional($product->category)->name,
-                        ];
-                    })
-                    ->values()
-                    ->all();
-
-                $productGroups = $usesSubcategoryGrouping
-                    ? collect($products)
-                        ->groupBy(fn (array $product): string => trim((string) ($product['subcategory'] ?? '')) !== ''
-                            ? trim((string) $product['subcategory'])
-                            : 'General')
-                        ->map(fn (Collection $groupProducts, string $label): array => [
-                            'label' => $label,
-                            'products' => $groupProducts
-                                ->sortBy(fn (array $product): string => Str::lower((string) ($product['name'] ?? '')))
-                                ->values()
-                                ->all(),
-                        ])
-                        ->sortBy(fn (array $group): string => Str::lower((string) ($group['label'] ?? '')))
+                            return ! $excluded;
+                        })
+                        ->map(function (Product $product): array {
+                            return [
+                                'id' => (int) $product->id,
+                                'name' => (string) $product->name,
+                                'price' => (float) $product->price,
+                                'image' => $product->image_src,
+                                'subcategory' => (string) optional($product->category)->name,
+                            ];
+                        })
                         ->values()
-                        ->all()
-                    : [];
+                        ->all();
 
-                return [
-                    'id' => (string) $section['key'],
-                    'name' => (string) $section['name'],
-                    'products' => $products,
-                    'groups' => $productGroups,
-                ];
-            })
-            ->filter(fn (array $section): bool => count($section['products']) > 0)
-            ->values();
+                    $productGroups = $usesSubcategoryGrouping
+                        ? collect($products)
+                            ->groupBy(fn (array $product): string => trim((string) ($product['subcategory'] ?? '')) !== ''
+                                ? trim((string) $product['subcategory'])
+                                : 'General')
+                            ->map(fn (Collection $groupProducts, string $label): array => [
+                                'label' => $label,
+                                'products' => $groupProducts
+                                    ->sortBy(fn (array $product): string => Str::lower((string) ($product['name'] ?? '')))
+                                    ->values()
+                                    ->all(),
+                            ])
+                            ->sortBy(fn (array $group): string => Str::lower((string) ($group['label'] ?? '')))
+                            ->values()
+                            ->all()
+                        : [];
+
+                    return [
+                        'id' => (string) $section['key'],
+                        'name' => (string) $section['name'],
+                        'products' => $products,
+                        'groups' => $productGroups,
+                    ];
+                })
+                ->filter(fn (array $section): bool => count($section['products']) > 0)
+                ->values()
+                ->all();
+        });
 
         return view('products.index', compact(
             'products',

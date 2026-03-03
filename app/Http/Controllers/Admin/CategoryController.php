@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use App\Support\AuditLogger;
+use App\Support\PublicCatalogCache;
+use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
@@ -100,9 +100,6 @@ class CategoryController extends Controller
 
     private function forgetPublicCatalogCaches(): void
     {
-        Cache::forget('public_categories_list_v1');
-        Cache::forget('public_categories_list_v2');
-        Cache::forget('public_landing_data_v1');
-        Cache::forget('public_landing_data_v2');
+        PublicCatalogCache::forgetAll();
     }
 }

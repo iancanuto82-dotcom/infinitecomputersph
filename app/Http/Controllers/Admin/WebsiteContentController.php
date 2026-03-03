@@ -7,10 +7,10 @@ use App\Models\BundleAd;
 use App\Models\CarouselSlide;
 use App\Models\FeaturedBrand;
 use App\Support\AuditLogger;
+use App\Support\PublicCatalogCache;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -465,8 +465,7 @@ class WebsiteContentController extends Controller
 
     private function forgetPublicLandingCaches(): void
     {
-        Cache::forget('public_landing_data_v1');
-        Cache::forget('public_landing_data_v2');
+        PublicCatalogCache::forgetLanding();
     }
 
     private function normalizeImageUrl(string $url): string

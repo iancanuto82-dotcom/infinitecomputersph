@@ -9,12 +9,12 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use App\Support\SpreadsheetReader;
 use App\Support\AuditLogger;
+use App\Support\PublicCatalogCache;
 use Illuminate\Support\Collection;
 
 class ProductController extends Controller
@@ -160,6 +160,8 @@ class ProductController extends Controller
                 ]
             );
 
+            $this->forgetPublicCatalogCaches();
+
             return redirect()
                 ->route('admin.products.index', $this->productIndexQuery($request))
                 ->with('status', 'Stock-in complete. Quantity and average cost updated.');
@@ -184,6 +186,8 @@ class ProductController extends Controller
                 'stock' => (int) $product->stock,
             ]
         );
+
+        $this->forgetPublicCatalogCaches();
 
         return redirect()->route('admin.products.index', $this->productIndexQuery($request));
     }
@@ -230,6 +234,8 @@ class ProductController extends Controller
             ]
         );
 
+        $this->forgetPublicCatalogCaches();
+
         return redirect()->route('admin.products.index', $this->productIndexQuery($request));
     }
 
@@ -270,6 +276,8 @@ class ProductController extends Controller
                 'deleted_snapshot' => $deletedSnapshot,
             ]
         );
+
+        $this->forgetPublicCatalogCaches();
 
         return back();
     }
@@ -337,6 +345,8 @@ class ProductController extends Controller
         if ($deletedCount === 0) {
             return back()->with('status', 'No matching products were found to delete.');
         }
+
+        $this->forgetPublicCatalogCaches();
 
         return back()->with('status', $deletedCount.' product(s) deleted.');
     }
@@ -685,10 +695,7 @@ class ProductController extends Controller
 
     private function forgetPublicCatalogCaches(): void
     {
-        Cache::forget('public_categories_list_v1');
-        Cache::forget('public_categories_list_v2');
-        Cache::forget('public_landing_data_v1');
-        Cache::forget('public_landing_data_v2');
+        PublicCatalogCache::forgetAll();
     }
 
     /**
