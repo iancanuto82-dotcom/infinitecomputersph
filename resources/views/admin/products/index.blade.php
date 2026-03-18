@@ -113,12 +113,6 @@
                         </select>
                     </div>
 
-                    <div class="products-filter-actions">
-                        <a href="{{ route('admin.products.index') }}"
-                            class="inline-flex h-[42px] min-w-[78px] items-center justify-center rounded-md bg-white px-3 text-sm font-medium text-gray-900 shadow-sm ring-1 ring-inset ring-black/15 hover:bg-orange-50">
-                            Reset
-                        </a>
-                    </div>
                 </div>
 
                 <div class="mt-3 border-t border-black/10 pt-3 text-xs text-gray-600">
@@ -126,7 +120,7 @@
                 </div>
             </form>
 
-            <div class="rounded-xl bg-white shadow-sm ring-1 ring-black/10">
+                <div class="rounded-xl bg-white shadow-sm ring-1 ring-black/10">
                 @if ($canEditProducts)
                     <div class="border-b border-black/10 px-4 py-3 sm:px-6">
                         <form id="bulk-delete-products-form" action="{{ route('admin.products.bulk-destroy') }}" method="POST"
@@ -146,7 +140,7 @@
                 @endif
 
                 <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm">
+                    <table class="products-table min-w-full text-sm">
                         <thead class="text-left text-xs font-semibold text-gray-600 bg-gray-50">
                             <tr>
                                 @if ($canEditProducts)
@@ -297,12 +291,6 @@
             min-width: 0;
         }
 
-        .products-filter-actions {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
         .product-details-summary {
             list-style: none;
         }
@@ -315,9 +303,22 @@
             content: '';
         }
 
+        .products-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background-color: rgb(249 250 251);
+            box-shadow: inset 0 -1px 0 rgba(15, 23, 42, 0.08);
+        }
+
+        body.admin-theme-dark .products-table thead th {
+            background-color: #111827;
+            box-shadow: inset 0 -1px 0 rgba(148, 163, 184, 0.22);
+        }
+
         @media (min-width: 1024px) {
             .products-filter-row {
-                grid-template-columns: minmax(0, 1.25fr) 15rem 11rem auto;
+                grid-template-columns: minmax(0, 1.25fr) 15rem 11rem;
             }
         }
     </style>
@@ -325,88 +326,17 @@
     <script>
         (() => {
             const form = document.getElementById('products-filter-form');
-            const searchInput = document.getElementById('search');
             const categorySelect = document.getElementById('category');
             const stockSelect = document.getElementById('stock');
 
-            if (!form || !searchInput || !categorySelect || !stockSelect) return;
+            if (!form || !categorySelect || !stockSelect) return;
 
-            let searchTimer = null;
-            const searchFocusStateKey = 'products_filter_search_focus_state';
-
-            const restoreSearchFocus = () => {
-                try {
-                    const raw = window.sessionStorage.getItem(searchFocusStateKey);
-                    if (!raw) return;
-
-                    const state = JSON.parse(raw);
-                    if (!state || state.path !== window.location.pathname) return;
-                    if (String(state.query ?? '') !== String(searchInput.value ?? '')) return;
-
-                    searchInput.focus({ preventScroll: true });
-                    const fallbackCaret = String(searchInput.value ?? '').length;
-                    const caret = Number.isFinite(Number(state.caret))
-                        ? Number(state.caret)
-                        : fallbackCaret;
-                    const clampedCaret = Math.max(0, Math.min(caret, fallbackCaret));
-                    searchInput.setSelectionRange(clampedCaret, clampedCaret);
-                } catch (_) {
-                    // Ignore session restore failures and continue without focus restore.
-                } finally {
-                    window.sessionStorage.removeItem(searchFocusStateKey);
-                }
-            };
-
-            const persistSearchFocus = () => {
-                try {
-                    const caret = Number.isInteger(searchInput.selectionStart)
-                        ? Number(searchInput.selectionStart)
-                        : String(searchInput.value ?? '').length;
-                    window.sessionStorage.setItem(searchFocusStateKey, JSON.stringify({
-                        path: window.location.pathname,
-                        query: String(searchInput.value ?? ''),
-                        caret,
-                    }));
-                } catch (_) {
-                    // Ignore session persistence failures.
-                }
-            };
-
-            restoreSearchFocus();
-
-            const submitFilters = ({ preserveSearchFocus = false } = {}) => {
-                const currentParams = new URLSearchParams(window.location.search);
-                currentParams.delete('page');
-
-                const nextParams = new URLSearchParams(new FormData(form));
-                nextParams.delete('page');
-
-                if (nextParams.toString() === currentParams.toString()) return;
-                if (preserveSearchFocus) persistSearchFocus();
+            const submitFilters = () => {
                 form.submit();
             };
 
             categorySelect.addEventListener('change', submitFilters);
             stockSelect.addEventListener('change', submitFilters);
-
-            searchInput.addEventListener('input', () => {
-                window.clearTimeout(searchTimer);
-                searchTimer = window.setTimeout(() => {
-                    submitFilters({ preserveSearchFocus: true });
-                }, 320);
-            });
-
-            searchInput.addEventListener('keydown', (event) => {
-                if (event.key !== 'Enter') return;
-                event.preventDefault();
-                window.clearTimeout(searchTimer);
-                submitFilters({ preserveSearchFocus: true });
-            });
-
-            searchInput.addEventListener('blur', () => {
-                window.clearTimeout(searchTimer);
-                submitFilters();
-            });
         })();
 
         (() => {

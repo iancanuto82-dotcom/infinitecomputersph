@@ -5,13 +5,17 @@ namespace App\Http\Controllers;
 use App\Models\BundleAd;
 use App\Models\CarouselSlide;
 use App\Models\Category;
+use App\Models\FeaturedBuild;
 use App\Models\FeaturedBrand;
 use App\Models\Product;
+use App\Models\WebsiteReview;
 use App\Support\PublicCatalogCache;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
@@ -38,9 +42,23 @@ class ProductController extends Controller
                 ->get(['id', 'name']);
 
             $bundleAds = BundleAd::query()
-                ->select(['id', 'bundle_type', 'image_url', 'link_url', 'sort_order'])
+                ->select(['id', 'bundle_type', 'image_path', 'image_url', 'link_url', 'sort_order'])
                 ->where('is_active', true)
                 ->orderBy('bundle_type')
+                ->orderBy('sort_order')
+                ->orderBy('id')
+                ->get();
+
+            $reviews = WebsiteReview::query()
+                ->select(['id', 'title', 'content', 'author_name', 'rating', 'sort_order'])
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('id')
+                ->get();
+
+            $featuredBuilds = FeaturedBuild::query()
+                ->select(['id', 'title', 'image_path', 'image_url', 'gallery_images', 'sort_order'])
+                ->where('is_active', true)
                 ->orderBy('sort_order')
                 ->orderBy('id')
                 ->get();
@@ -51,6 +69,8 @@ class ProductController extends Controller
                 'categories' => $categories,
                 'entryBundleAds' => $bundleAds->where('bundle_type', 'entry')->values(),
                 'gamingBundleAds' => $bundleAds->where('bundle_type', 'gaming')->values(),
+                'reviews' => $reviews,
+                'featuredBuilds' => $featuredBuilds,
             ];
         });
 
@@ -80,10 +100,7 @@ class ProductController extends Controller
             ->where('is_active', true);
 
         if ($search !== '') {
-            $productsQuery->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
-            });
+            $this->applyProductCatalogSearch($productsQuery, $search);
         }
 
         if ($categoryId) {
@@ -115,7 +132,7 @@ class ProductController extends Controller
 
             $builderSections = [
                 ['key' => 'processor', 'name' => 'Processor', 'match' => ['processor', 'cpu', 'ryzen', 'intel', 'athlon', 'pentium', 'celeron', 'core i', 'xeon'], 'exclude' => ['cooler', 'fan', 'aio', 'heatsink', 'motherboard', 'mobo', 'chipset', 'socket', 'lga', 'am4', 'am5', 'h610', 'h510', 'h410', 'h310', 'b450', 'b550', 'b660', 'b760', 'a320', 'a520', 'x570', 'z690', 'z790']],
-                ['key' => 'cpu_cooler', 'name' => 'CPU Cooler', 'match' => ['cpu cooler', 'aio', 'liquid cooler', 'radiator', 'air cooler', 'cooling'], 'exclude' => ['case fan', 'fan hub', 'keyboard', 'mouse', 'ram', 'memory', 'ddr', '3200mhz', '3600mhz', 'cl16', 'cl18', 'cl22', 'extension cable', 'cable set', 'laptop cooler', 'mini laptop cooler', 'laptop', 'notebook']],
+                ['key' => 'cpu_cooler', 'name' => 'CPU Cooler', 'match' => ['cpu cooler', 'aio', 'liquid cooler', 'radiator', 'air cooler', 'cooling'], 'exclude' => ['case fan', 'fan hub', 'keyboard', 'mouse', 'ram', 'memory', 'ddr', '3200mhz', '3600mhz', 'cl16', 'cl18', 'cl22', 'extension cable', 'cable set', 'laptop cooler', 'mini laptop cooler', 'laptop', 'notebook', 'case', 'chassis']],
                 ['key' => 'motherboard', 'name' => 'Motherboard', 'match' => ['motherboard', 'mobo', 'mainboard', 'h610', 'h510', 'h410', 'h310', 'b450', 'b550', 'b650', 'b660', 'b760', 'a320', 'a520', 'x570', 'z690', 'z790'], 'exclude' => ['processor', 'cpu', 'ryzen', 'intel core', 'athlon', 'pentium', 'celeron', 'xeon', 'cooler', 'aio', 'liquid cooler', 'fan', 'heatsink', 'ram', 'memory', 'ssd', 'hdd', 'nvme', 'powersupply', 'power supply', 'psu', 'case', 'chassis', 'extension cable', 'cable set']],
                 ['key' => 'desktop_ram', 'name' => 'RAM', 'match' => ['desktop ram', 'ram', 'memory', 'ddr'], 'exclude' => ['laptop', 'notebook', 'sodimm', 'so-dimm', 'so dimm', 'processor', 'cpu', 'ryzen', 'intel', 'athlon', 'pentium', 'celeron', 'xeon', 'motherboard', 'mobo', 'h610', 'h510', 'h410', 'h310', 'b450', 'b550', 'b650', 'b660', 'b760', 'a320', 'a520', 'x570', 'z690', 'z790', 'cooler', 'aio', 'liquid', 'radiator', 'fan', 'powersupply', 'power supply', 'psu', 'graphics', 'gpu', 'vga', 'ssd', 'hdd', 'nvme', 'm.2', 'case', 'chassis', 'atx', 'm-atx', 'matx', 'itx', 'e-atx', 'extension cable', 'cable set']],
                 ['key' => 'graphics_card', 'name' => 'Graphics Card', 'match' => ['graphics card', 'gpu', 'video card', 'vga'], 'exclude' => ['adapter', 'cable', 'converter']],
@@ -232,6 +249,18 @@ class ProductController extends Controller
             'sort',
             'builderCategories'
         ));
+    }
+
+    public function featuredBuilds()
+    {
+        $featuredBuildItems = FeaturedBuild::query()
+            ->select(['id', 'title', 'image_path', 'image_url', 'gallery_images', 'sort_order'])
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        return view('featured-builds.index', compact('featuredBuildItems'));
     }
 
     private function isProcessorMainCategoryName(string $name): bool
@@ -449,5 +478,72 @@ class ProductController extends Controller
         }
 
         return $query;
+    }
+
+    private function applyProductCatalogSearch(Builder $query, string $search): void
+    {
+        $trimmedSearch = trim($search);
+        if ($trimmedSearch === '') {
+            return;
+        }
+
+        $booleanQuery = $this->toBooleanFullTextQuery($trimmedSearch);
+        if ($this->canUseProductFullTextSearch() && $booleanQuery !== '') {
+            $query->whereRaw(
+                'MATCH(name, description) AGAINST (? IN BOOLEAN MODE)',
+                [$booleanQuery]
+            );
+
+            return;
+        }
+
+        $query->where(function (Builder $builder) use ($trimmedSearch): void {
+            $builder->where('name', 'like', "%{$trimmedSearch}%")
+                ->orWhere('description', 'like', "%{$trimmedSearch}%");
+        });
+    }
+
+    private function canUseProductFullTextSearch(): bool
+    {
+        if (! in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
+            return false;
+        }
+
+        static $hasMatchingFullTextIndex = null;
+        if ($hasMatchingFullTextIndex !== null) {
+            return $hasMatchingFullTextIndex;
+        }
+
+        try {
+            $indexes = DB::select(
+                "SELECT index_name, GROUP_CONCAT(column_name ORDER BY seq_in_index SEPARATOR ',') AS cols
+                 FROM information_schema.statistics
+                 WHERE table_schema = DATABASE()
+                   AND table_name = ?
+                   AND index_type = 'FULLTEXT'
+                 GROUP BY index_name",
+                ['products']
+            );
+
+            $hasMatchingFullTextIndex = collect($indexes)->contains(function ($index): bool {
+                return Str::lower((string) ($index->cols ?? '')) === 'name,description';
+            });
+        } catch (\Throwable) {
+            $hasMatchingFullTextIndex = false;
+        }
+
+        return $hasMatchingFullTextIndex;
+    }
+
+    private function toBooleanFullTextQuery(string $search): string
+    {
+        $normalized = preg_replace('/[^\pL\pN]+/u', ' ', Str::lower(trim($search))) ?? '';
+        $terms = preg_split('/\s+/', trim($normalized)) ?: [];
+
+        return collect($terms)
+            ->filter(fn (string $term): bool => mb_strlen($term) >= 3)
+            ->map(fn (string $term): string => $term.'*')
+            ->values()
+            ->implode(' ');
     }
 }

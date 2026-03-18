@@ -40,6 +40,8 @@
 </head>
 @php
     $isWidePublicPage = request()->routeIs('home') || request()->routeIs('pricelist');
+    $isHomeRoute = request()->routeIs('home');
+    $isPricelistRoute = request()->routeIs('pricelist*');
     $containerMaxWidth = $isWidePublicPage ? 'max-w-[92rem]' : 'max-w-7xl';
     $headerCategories = collect();
 
@@ -101,7 +103,7 @@
 
     $headerInitialParentId = (string) (optional($headerMainCategories->first())->id ?? '');
 @endphp
-<body class="public-theme antialiased min-h-screen">
+<body class="public-theme antialiased min-h-screen {{ $isHomeRoute ? 'home-theme' : '' }} {{ $isPricelistRoute ? 'pricelist-theme' : '' }}">
     <div class="min-h-screen flex flex-col" x-data="{ mapOpen: false, logoFailed: false }" x-on:keydown.escape.window="mapOpen = false">
         <nav class="sticky top-0 z-30">
             <div class="market-topbar">
@@ -110,7 +112,7 @@
                         <a href="{{ route('home') }}" class="hidden items-center gap-3 md:inline-flex md:justify-self-start">
                             <span class="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-white/20 ring-1 ring-white/30">
                                 <img src="{{ $appLogo }}" alt="{{ config('app.name') }} logo"
-                                    class="h-10 w-10 object-contain" loading="lazy" referrerpolicy="no-referrer"
+                                    class="app-logo-bordered h-10 w-10 object-contain" loading="lazy" referrerpolicy="no-referrer"
                                     x-show="!logoFailed" x-on:error="logoFailed = true">
                                 <span x-cloak x-show="logoFailed" class="text-base font-semibold text-white">I</span>
                             </span>
@@ -163,9 +165,7 @@
                                     </div>
                                 </details>
                             @else
-                                <a href="{{ route('login') }}" class="hidden rounded-full border border-white/40 px-4 py-1.5 text-sm font-semibold text-white sm:inline-flex">
-                                    Login
-                                </a>
+                                {{-- Login button temporarily hidden --}}
                             @endauth
                         </div>
                     </div>
@@ -174,16 +174,23 @@
 
             <div class="market-menubar">
                 <div class="{{ $containerMaxWidth }} mx-auto px-4 sm:px-6 lg:px-8">
-                    <div class="flex items-center justify-center gap-6 overflow-x-auto md:overflow-visible py-3 text-sm font-medium uppercase tracking-wide [&::-webkit-scrollbar]:hidden"
-                        style="-ms-overflow-style: none; scrollbar-width: none;">
+                    <div class="relative flex flex-wrap items-center justify-center gap-x-6 gap-y-2 py-3 text-sm font-medium uppercase tracking-wide">
                         <a href="{{ route('home') }}" class="market-menu-link {{ request()->routeIs('home') ? 'market-menu-active' : '' }}">Home</a>
                         <div class="market-menu-group market-menu-group--products"
                             x-data="{
                                 productsOpen: false,
                                 openTimer: null,
                                 closeTimer: null,
-                                isTouch: window.matchMedia('(hover: none), (pointer: coarse)').matches,
+                                supportsHover: window.matchMedia('(hover: hover) and (pointer: fine)').matches,
                                 activeParent: '{{ $headerInitialParentId }}',
+                                toggleProducts() {
+                                    window.clearTimeout(this.openTimer);
+                                    window.clearTimeout(this.closeTimer);
+                                    this.productsOpen = !this.productsOpen;
+                                    if (this.productsOpen && !this.activeParent) {
+                                        this.activeParent = '{{ $headerInitialParentId }}';
+                                    }
+                                },
                                 openProducts() {
                                     window.clearTimeout(this.closeTimer);
                                     if (this.productsOpen) return;
@@ -209,11 +216,11 @@
                                     }, 140);
                                 }
                             }"
-                            x-on:mouseenter="if (!isTouch) openProducts()"
-                            x-on:mouseleave="if (!isTouch) closeProducts()">
+                            x-on:mouseenter="if (supportsHover) openProducts()"
+                            x-on:mouseleave="if (supportsHover) closeProducts()">
                             <a href="{{ route('pricelist') }}"
-                                class="market-menu-link inline-flex items-center gap-1 {{ request()->routeIs('pricelist*') ? 'market-menu-active' : '' }}"
-                                x-on:click.prevent="if (isTouch) { productsOpen = !productsOpen; if (productsOpen && !activeParent) activeParent = '{{ $headerInitialParentId }}'; } else { window.location.href = $el.href; }">
+                                x-on:click.prevent="if (!supportsHover) toggleProducts()"
+                                class="market-menu-link inline-flex items-center gap-1 {{ request()->routeIs('pricelist*') ? 'market-menu-active' : '' }}">
                                 Products
                                 <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                     <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.51a.75.75 0 01-1.08 0l-4.25-4.51a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
@@ -227,8 +234,8 @@
                                 x-transition:leave="transition ease-in duration-110"
                                 x-transition:leave-start="opacity-100 translate-y-0 scale-100"
                                 x-transition:leave-end="opacity-0 -translate-y-1 scale-[0.99]"
-                                x-on:mouseenter="if (!isTouch) openProducts()"
-                                x-on:mouseleave="if (!isTouch) closeProducts()"
+                                x-on:mouseenter="if (supportsHover) openProducts()"
+                                x-on:mouseleave="if (supportsHover) closeProducts()"
                                 x-on:click.outside="closeProducts(true)"
                                 class="market-mega-popover">
                                 <div class="market-mega-shell">
@@ -295,6 +302,12 @@
                             </div>
                         </div>
                         <a href="{{ route('pricelist', ['tab' => 'diy_builder']) }}#pricelist-tabs" class="market-menu-link">Build a PC</a>
+                        <a id="nav-featured-builds"
+                            href="{{ route('featured-builds') }}"
+                            class="market-menu-link {{ request()->routeIs('featured-builds') ? 'market-menu-active' : '' }}"
+                            title="View featured build gallery">
+                            Featured Builds
+                        </a>
                     </div>
                 </div>
             </div>
@@ -324,7 +337,7 @@
             </div>
         </div>
 
-        <main class="public-main flex-1 {{ $containerMaxWidth }} mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+        <main class="public-main flex-1 {{ $containerMaxWidth }} mx-auto w-full px-4 sm:px-6 lg:px-8 {{ request()->routeIs('home') ? 'pt-0 pb-8' : 'py-8' }}">
             @yield('content')
         </main>
 
@@ -335,7 +348,7 @@
                         <a href="{{ route('home') }}" class="inline-flex items-center gap-3">
                             <span class="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-white/15 ring-1 ring-white/25">
                                 <img src="{{ $appLogo }}" alt="{{ config('app.name') }} logo"
-                                    class="h-10 w-10 object-contain" loading="lazy" referrerpolicy="no-referrer">
+                                    class="app-logo-bordered h-10 w-10 object-contain" loading="lazy" referrerpolicy="no-referrer">
                             </span>
                             <span class="text-lg font-semibold tracking-tight text-white">{{ config('app.name') }}</span>
                         </a>
@@ -358,6 +371,7 @@
                             <li><a href="{{ route('home') }}" class="theme-footer-link">Home</a></li>
                             <li><a href="{{ route('pricelist') }}" class="theme-footer-link">All Products</a></li>
                             <li><a href="{{ route('pricelist', ['tab' => 'diy_builder']) }}#pricelist-tabs" class="theme-footer-link">Build a PC</a></li>
+                            <li><a href="{{ route('featured-builds') }}" class="theme-footer-link">Featured Builds</a></li>
                             <li><a href="{{ route('home') }}#featured-brands" class="theme-footer-link">Featured Brands</a></li>
                         </ul>
                     </section>

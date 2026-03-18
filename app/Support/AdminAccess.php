@@ -51,8 +51,8 @@ final class AdminAccess
         'content' => [
             'label' => 'Website Content',
             'permissions' => [
-                'content.view' => 'View carousel and featured brands settings',
-                'content.edit' => 'Update carousel and featured brands settings',
+                'content.view' => 'View website content settings (slides, brands, bundles, featured builds, reviews)',
+                'content.edit' => 'Update website content settings (slides, brands, bundles, featured builds, reviews)',
             ],
         ],
         'history' => [

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Product;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -36,12 +37,11 @@ class ProductController extends Controller
             ->latest();
 
         if ($search !== '') {
-            $productsQuery->where(function ($query) use ($search) {
-                $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%")
-                    ->orWhereHas('category', function ($categoryQuery) use ($search) {
-                        $categoryQuery->where('name', 'like', "%{$search}%");
-                    });
+            $productsQuery->where(function (Builder $query) use ($search): void {
+                $this->applyProductCatalogSearch($query, $search);
+                $query->orWhereHas('category', function (Builder $categoryQuery) use ($search): void {
+                    $categoryQuery->where('name', 'like', "%{$search}%");
+                });
             });
         }
 
@@ -925,6 +925,73 @@ class ProductController extends Controller
     private function moneyToCents(float $value): int
     {
         return (int) round($value * 100);
+    }
+
+    private function applyProductCatalogSearch(Builder $query, string $search): void
+    {
+        $trimmedSearch = trim($search);
+        if ($trimmedSearch === '') {
+            return;
+        }
+
+        $booleanQuery = $this->toBooleanFullTextQuery($trimmedSearch);
+        if ($this->canUseProductFullTextSearch() && $booleanQuery !== '') {
+            $query->whereRaw(
+                'MATCH(name, description) AGAINST (? IN BOOLEAN MODE)',
+                [$booleanQuery]
+            );
+
+            return;
+        }
+
+        $query->where(function (Builder $builder) use ($trimmedSearch): void {
+            $builder->where('name', 'like', "%{$trimmedSearch}%")
+                ->orWhere('description', 'like', "%{$trimmedSearch}%");
+        });
+    }
+
+    private function canUseProductFullTextSearch(): bool
+    {
+        if (! in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
+            return false;
+        }
+
+        static $hasMatchingFullTextIndex = null;
+        if ($hasMatchingFullTextIndex !== null) {
+            return $hasMatchingFullTextIndex;
+        }
+
+        try {
+            $indexes = DB::select(
+                "SELECT index_name, GROUP_CONCAT(column_name ORDER BY seq_in_index SEPARATOR ',') AS cols
+                 FROM information_schema.statistics
+                 WHERE table_schema = DATABASE()
+                   AND table_name = ?
+                   AND index_type = 'FULLTEXT'
+                 GROUP BY index_name",
+                ['products']
+            );
+
+            $hasMatchingFullTextIndex = collect($indexes)->contains(function ($index): bool {
+                return Str::lower((string) ($index->cols ?? '')) === 'name,description';
+            });
+        } catch (\Throwable) {
+            $hasMatchingFullTextIndex = false;
+        }
+
+        return $hasMatchingFullTextIndex;
+    }
+
+    private function toBooleanFullTextQuery(string $search): string
+    {
+        $normalized = preg_replace('/[^\pL\pN]+/u', ' ', Str::lower(trim($search))) ?? '';
+        $terms = preg_split('/\s+/', trim($normalized)) ?: [];
+
+        return collect($terms)
+            ->filter(fn (string $term): bool => mb_strlen($term) >= 3)
+            ->map(fn (string $term): string => $term.'*')
+            ->values()
+            ->implode(' ');
     }
 
     /**

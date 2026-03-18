@@ -30,7 +30,7 @@
                 <div x-data="{ logoFailed: false }" class="mb-5 text-center">
                     <a href="/" class="inline-flex flex-col items-center gap-2">
                         <img src="{{ $appLogo }}" alt="{{ config('app.name') }} logo"
-                            class="h-24 w-24 object-contain sm:h-28 sm:w-28"
+                            class="app-logo-bordered h-24 w-24 object-contain sm:h-28 sm:w-28"
                             loading="lazy"
                             referrerpolicy="no-referrer"
                             x-show="!logoFailed"

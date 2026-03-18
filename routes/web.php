@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PublicProductController::class, 'landing'])->name('home');
 Route::get('/pricelist', [PublicProductController::class, 'index'])->name('pricelist');
+Route::get('/featured-builds', [PublicProductController::class, 'featuredBuilds'])->name('featured-builds');
 Route::get('/pricelist/{product}', [PublicProductController::class, 'show'])->name('pricelist.show');
 
 Route::get('/dashboard', function () {

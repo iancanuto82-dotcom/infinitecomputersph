@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\BundleAd;
 use App\Models\CarouselSlide;
+use App\Models\FeaturedBuild;
 use App\Models\FeaturedBrand;
+use App\Models\WebsiteReview;
 use App\Support\AuditLogger;
 use App\Support\PublicCatalogCache;
 use Illuminate\Http\RedirectResponse;
@@ -22,6 +24,9 @@ class WebsiteContentController extends Controller
     private const MAX_SLIDES = 6;
     private const MAX_BRANDS = 18;
     private const MAX_BUNDLE_ADS_PER_TYPE = 12;
+    private const MAX_FEATURED_BUILDS = 18;
+    private const MAX_FEATURED_BUILD_GALLERY_IMAGES = 4;
+    private const MAX_REVIEWS = 12;
 
     public function edit(): View
     {
@@ -41,6 +46,16 @@ class WebsiteContentController extends Controller
             ->orderBy('id')
             ->get();
 
+        $reviews = WebsiteReview::query()
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        $featuredBuilds = FeaturedBuild::query()
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
         $entryBundleAds = $bundleAds
             ->where('bundle_type', 'entry')
             ->values();
@@ -54,15 +69,25 @@ class WebsiteContentController extends Controller
             'brandRows' => $this->buildBrandRows($brands, self::MAX_BRANDS),
             'entryBundleAdRows' => $this->buildBundleRows($entryBundleAds, self::MAX_BUNDLE_ADS_PER_TYPE),
             'gamingBundleAdRows' => $this->buildBundleRows($gamingBundleAds, self::MAX_BUNDLE_ADS_PER_TYPE),
+            'featuredBuildRows' => $this->buildFeaturedBuildRows($featuredBuilds, self::MAX_FEATURED_BUILDS),
+            'reviewRows' => $this->buildReviewRows($reviews, self::MAX_REVIEWS),
             'slideImageSrcMap' => $slides
                 ->mapWithKeys(fn (CarouselSlide $slide) => [(string) $slide->id => $slide->image_src])
                 ->all(),
             'brandLogoSrcMap' => $brands
                 ->mapWithKeys(fn (FeaturedBrand $brand) => [(string) $brand->id => $brand->logo_src])
                 ->all(),
+            'bundleImageSrcMap' => $bundleAds
+                ->mapWithKeys(fn (BundleAd $bundleAd) => [(string) $bundleAd->id => $bundleAd->image_src])
+                ->all(),
+            'featuredBuildImageSrcMap' => $featuredBuilds
+                ->mapWithKeys(fn (FeaturedBuild $featuredBuild) => [(string) $featuredBuild->id => $featuredBuild->image_src])
+                ->all(),
             'maxSlides' => self::MAX_SLIDES,
             'maxBrands' => self::MAX_BRANDS,
             'maxBundleAdsPerType' => self::MAX_BUNDLE_ADS_PER_TYPE,
+            'maxFeaturedBuilds' => self::MAX_FEATURED_BUILDS,
+            'maxReviews' => self::MAX_REVIEWS,
         ]);
     }
 
@@ -94,7 +119,7 @@ class WebsiteContentController extends Controller
             'entry_bundle_ads' => ['nullable', 'array', 'max:'.self::MAX_BUNDLE_ADS_PER_TYPE],
             'entry_bundle_ads.*.id' => ['nullable', 'integer', 'exists:bundle_ads,id'],
             'entry_bundle_ads.*.image_url' => ['nullable', 'url', 'max:2048'],
-            'entry_bundle_ads.*.link_url' => ['nullable', 'url', 'max:2048'],
+            'entry_bundle_ads.*.image_file' => ['nullable', 'image', 'max:5120'],
             'entry_bundle_ads.*.sort_order' => ['nullable', 'integer', 'min:1', 'max:999'],
             'entry_bundle_ads.*.is_active' => ['nullable', 'boolean'],
             'entry_bundle_ads.*._delete' => ['nullable', 'boolean'],
@@ -102,23 +127,49 @@ class WebsiteContentController extends Controller
             'gaming_bundle_ads' => ['nullable', 'array', 'max:'.self::MAX_BUNDLE_ADS_PER_TYPE],
             'gaming_bundle_ads.*.id' => ['nullable', 'integer', 'exists:bundle_ads,id'],
             'gaming_bundle_ads.*.image_url' => ['nullable', 'url', 'max:2048'],
-            'gaming_bundle_ads.*.link_url' => ['nullable', 'url', 'max:2048'],
+            'gaming_bundle_ads.*.image_file' => ['nullable', 'image', 'max:5120'],
             'gaming_bundle_ads.*.sort_order' => ['nullable', 'integer', 'min:1', 'max:999'],
             'gaming_bundle_ads.*.is_active' => ['nullable', 'boolean'],
             'gaming_bundle_ads.*._delete' => ['nullable', 'boolean'],
+
+            'featured_builds' => ['nullable', 'array', 'max:'.self::MAX_FEATURED_BUILDS],
+            'featured_builds.*.id' => ['nullable', 'integer', 'exists:featured_builds,id'],
+            'featured_builds.*.title' => ['nullable', 'string', 'max:180'],
+            'featured_builds.*.image_file' => ['nullable', 'image', 'max:15360'],
+            'featured_builds.*.gallery_files' => ['nullable', 'array', 'max:'.self::MAX_FEATURED_BUILD_GALLERY_IMAGES],
+            'featured_builds.*.gallery_files.*' => ['nullable', 'image', 'max:15360'],
+            'featured_builds.*.sort_order' => ['nullable', 'integer', 'min:1', 'max:999'],
+            'featured_builds.*.is_active' => ['nullable', 'boolean'],
+            'featured_builds.*.remove_image' => ['nullable', 'boolean'],
+            'featured_builds.*._delete' => ['nullable', 'boolean'],
+
+            'reviews' => ['nullable', 'array', 'max:'.self::MAX_REVIEWS],
+            'reviews.*.id' => ['nullable', 'integer', 'exists:website_reviews,id'],
+            'reviews.*.title' => ['nullable', 'string', 'max:180'],
+            'reviews.*.content' => ['nullable', 'string', 'max:2000'],
+            'reviews.*.author_name' => ['nullable', 'string', 'max:120'],
+            'reviews.*.rating' => ['nullable', 'integer', 'min:1', 'max:5'],
+            'reviews.*.sort_order' => ['nullable', 'integer', 'min:1', 'max:999'],
+            'reviews.*.is_active' => ['nullable', 'boolean'],
+            'reviews.*._delete' => ['nullable', 'boolean'],
         ]);
 
         $slidesPayload = (array) ($validated['slides'] ?? []);
         $brandsPayload = (array) ($validated['brands'] ?? []);
         $entryBundleAdsPayload = (array) ($validated['entry_bundle_ads'] ?? []);
         $gamingBundleAdsPayload = (array) ($validated['gaming_bundle_ads'] ?? []);
+        $featuredBuildsPayload = (array) ($validated['featured_builds'] ?? []);
+        $reviewsPayload = (array) ($validated['reviews'] ?? []);
 
         $errors = [];
         $this->validateContentRows(
+            $request,
             $slidesPayload,
             $brandsPayload,
             $entryBundleAdsPayload,
             $gamingBundleAdsPayload,
+            $featuredBuildsPayload,
+            $reviewsPayload,
             $errors
         );
 
@@ -126,14 +177,16 @@ class WebsiteContentController extends Controller
             throw ValidationException::withMessages($errors);
         }
 
-        $summary = DB::transaction(function () use ($request, $slidesPayload, $brandsPayload, $entryBundleAdsPayload, $gamingBundleAdsPayload): array {
+        $summary = DB::transaction(function () use ($request, $slidesPayload, $brandsPayload, $entryBundleAdsPayload, $gamingBundleAdsPayload, $featuredBuildsPayload, $reviewsPayload): array {
             return [
                 'slides' => $this->syncSlides($request, $slidesPayload),
                 'brands' => $this->syncBrands($request, $brandsPayload),
                 'bundle_ads' => [
-                    'entry' => $this->syncBundleAds($entryBundleAdsPayload, 'entry'),
-                    'gaming' => $this->syncBundleAds($gamingBundleAdsPayload, 'gaming'),
+                    'entry' => $this->syncBundleAds($request, $entryBundleAdsPayload, 'entry'),
+                    'gaming' => $this->syncBundleAds($request, $gamingBundleAdsPayload, 'gaming'),
                 ],
+                'featured_builds' => $this->syncFeaturedBuilds($request, $featuredBuildsPayload),
+                'reviews' => $this->syncReviews($reviewsPayload),
             ];
         });
 
@@ -143,7 +196,7 @@ class WebsiteContentController extends Controller
             'website_content',
             null,
             'Pricelist content',
-            'Updated carousel, featured brands, and bundle ads.',
+            'Updated carousel, featured brands, bundle ads, featured builds, and reviews.',
             $summary
         );
 
@@ -159,20 +212,25 @@ class WebsiteContentController extends Controller
      * @param array<int, array<string, mixed>> $brandsPayload
      * @param array<int, array<string, mixed>> $entryBundleAdsPayload
      * @param array<int, array<string, mixed>> $gamingBundleAdsPayload
+     * @param array<int, array<string, mixed>> $featuredBuildsPayload
+     * @param array<int, array<string, mixed>> $reviewsPayload
      * @param array<string, string> $errors
      */
     private function validateContentRows(
+        Request $request,
         array $slidesPayload,
         array $brandsPayload,
         array $entryBundleAdsPayload,
         array $gamingBundleAdsPayload,
+        array $featuredBuildsPayload,
+        array $reviewsPayload,
         array &$errors
     ): void
     {
         foreach ($slidesPayload as $index => $row) {
             $delete = filter_var($row['_delete'] ?? false, FILTER_VALIDATE_BOOLEAN);
             $imageUrl = $this->normalizeImageUrl(trim((string) ($row['image_url'] ?? '')));
-            $hasFile = isset($row['image_file']);
+            $hasFile = $request->hasFile("slides.$index.image_file");
 
             if ($delete) {
                 continue;
@@ -188,7 +246,7 @@ class WebsiteContentController extends Controller
             $delete = filter_var($row['_delete'] ?? false, FILTER_VALIDATE_BOOLEAN);
             $name = trim((string) ($row['name'] ?? ''));
             $logoUrl = trim((string) ($row['logo_url'] ?? ''));
-            $hasFile = isset($row['logo_file']);
+            $hasFile = $request->hasFile("brands.$index.logo_file");
 
             if ($delete) {
                 continue;
@@ -207,38 +265,101 @@ class WebsiteContentController extends Controller
         foreach ($entryBundleAdsPayload as $index => $row) {
             $delete = filter_var($row['_delete'] ?? false, FILTER_VALIDATE_BOOLEAN);
             $imageUrl = trim((string) ($row['image_url'] ?? ''));
-            $linkUrl = trim((string) ($row['link_url'] ?? ''));
+            $hasFile = $request->hasFile("entry_bundle_ads.$index.image_file");
+            $bundleAd = ! empty($row['id']) ? BundleAd::query()->find((int) $row['id']) : null;
+            $hasExistingImage = $bundleAd && (trim((string) $bundleAd->image_url) !== '' || trim((string) $bundleAd->image_path) !== '');
 
             if ($delete) {
                 continue;
             }
 
-            $hasAnyContent = $imageUrl !== '' || $linkUrl !== '' || ! empty($row['id']);
+            $hasAnyContent = $imageUrl !== '' || $hasFile || ! empty($row['id']);
             if (! $hasAnyContent) {
                 continue;
             }
 
-            if ($imageUrl === '') {
-                $errors["entry_bundle_ads.$index.image_url"] = 'Image URL is required.';
+            if ($imageUrl === '' && ! $hasFile && ! $hasExistingImage) {
+                $errors["entry_bundle_ads.$index.image_url"] = 'Image upload or image URL is required.';
             }
         }
 
         foreach ($gamingBundleAdsPayload as $index => $row) {
             $delete = filter_var($row['_delete'] ?? false, FILTER_VALIDATE_BOOLEAN);
             $imageUrl = trim((string) ($row['image_url'] ?? ''));
-            $linkUrl = trim((string) ($row['link_url'] ?? ''));
+            $hasFile = $request->hasFile("gaming_bundle_ads.$index.image_file");
+            $bundleAd = ! empty($row['id']) ? BundleAd::query()->find((int) $row['id']) : null;
+            $hasExistingImage = $bundleAd && (trim((string) $bundleAd->image_url) !== '' || trim((string) $bundleAd->image_path) !== '');
 
             if ($delete) {
                 continue;
             }
 
-            $hasAnyContent = $imageUrl !== '' || $linkUrl !== '' || ! empty($row['id']);
+            $hasAnyContent = $imageUrl !== '' || $hasFile || ! empty($row['id']);
             if (! $hasAnyContent) {
                 continue;
             }
 
-            if ($imageUrl === '') {
-                $errors["gaming_bundle_ads.$index.image_url"] = 'Image URL is required.';
+            if ($imageUrl === '' && ! $hasFile && ! $hasExistingImage) {
+                $errors["gaming_bundle_ads.$index.image_url"] = 'Image upload or image URL is required.';
+            }
+        }
+
+        foreach ($featuredBuildsPayload as $index => $row) {
+            $delete = filter_var($row['_delete'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $title = trim((string) ($row['title'] ?? ''));
+            $hasPrimaryFile = $request->hasFile("featured_builds.$index.image_file");
+            $hasGalleryFile = $this->hasFeaturedBuildGalleryUpload($request, $index);
+            $featuredBuild = ! empty($row['id']) ? FeaturedBuild::query()->find((int) $row['id']) : null;
+            $hasExistingImage = $featuredBuild
+                && (
+                    trim((string) $featuredBuild->image_url) !== ''
+                    || trim((string) $featuredBuild->image_path) !== ''
+                    || count((array) ($featuredBuild->gallery_images ?? [])) > 0
+                );
+
+            if ($delete) {
+                continue;
+            }
+
+            $hasAnyContent = $title !== '' || $hasPrimaryFile || $hasGalleryFile || ! empty($row['id']);
+            if (! $hasAnyContent) {
+                continue;
+            }
+
+            if (! $hasPrimaryFile && ! $hasGalleryFile && ! $hasExistingImage) {
+                $errors["featured_builds.$index.image_file"] = 'Primary image upload or at least one gallery image upload is required.';
+            }
+        }
+
+        foreach ($reviewsPayload as $index => $row) {
+            $delete = filter_var($row['_delete'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $title = trim((string) ($row['title'] ?? ''));
+            $content = trim((string) ($row['content'] ?? ''));
+            $authorName = trim((string) ($row['author_name'] ?? ''));
+
+            if ($delete) {
+                continue;
+            }
+
+            $hasAnyContent = $title !== ''
+                || $content !== ''
+                || $authorName !== ''
+                || ! empty($row['id']);
+
+            if (! $hasAnyContent) {
+                continue;
+            }
+
+            if ($title === '') {
+                $errors["reviews.$index.title"] = 'Review title is required.';
+            }
+
+            if ($content === '') {
+                $errors["reviews.$index.content"] = 'Review text is required.';
+            }
+
+            if ($authorName === '') {
+                $errors["reviews.$index.author_name"] = 'Reviewer name is required.';
             }
         }
     }
@@ -400,7 +521,7 @@ class WebsiteContentController extends Controller
      * @param array<int, array<string, mixed>> $bundleAdsPayload
      * @return array<string, int>
      */
-    private function syncBundleAds(array $bundleAdsPayload, string $bundleType): array
+    private function syncBundleAds(Request $request, array $bundleAdsPayload, string $bundleType): array
     {
         $created = 0;
         $updated = 0;
@@ -421,12 +542,12 @@ class WebsiteContentController extends Controller
                 continue;
             }
 
-            $imageUrl = trim((string) ($row['image_url'] ?? ''));
-            $linkUrl = trim((string) ($row['link_url'] ?? ''));
+            $imageUrl = $this->normalizeImageUrl(trim((string) ($row['image_url'] ?? '')));
             $sortOrder = isset($row['sort_order']) ? (int) $row['sort_order'] : ($index + 1);
             $isActive = filter_var($row['is_active'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $hasFile = $request->hasFile("{$bundleType}_bundle_ads.$index.image_file");
 
-            $hasAnyContent = $imageUrl !== '' || $linkUrl !== '' || $bundleAd !== null;
+            $hasAnyContent = $imageUrl !== '' || $hasFile || $bundleAd !== null;
             if (! $hasAnyContent) {
                 continue;
             }
@@ -434,8 +555,28 @@ class WebsiteContentController extends Controller
             $bundleAd ??= new BundleAd();
 
             $bundleAd->bundle_type = $bundleType;
-            $bundleAd->image_url = $imageUrl !== '' ? $imageUrl : null;
-            $bundleAd->link_url = $linkUrl !== '' ? $linkUrl : null;
+            if ($hasFile) {
+                $file = $request->file("{$bundleType}_bundle_ads.$index.image_file");
+                if ($file) {
+                    if ($bundleAd->image_path) {
+                        $this->deletePublicFile($bundleAd->image_path);
+                    }
+                    $bundleAd->image_path = $file->store('website/bundles', 'public');
+                }
+            } elseif ($imageUrl !== '') {
+                if ($bundleAd->image_path) {
+                    $this->deletePublicFile($bundleAd->image_path);
+                    $bundleAd->image_path = null;
+                }
+            }
+
+            if ($imageUrl !== '') {
+                $bundleAd->image_url = $imageUrl;
+            } elseif ($hasFile) {
+                $bundleAd->image_url = null;
+            }
+
+            $bundleAd->link_url = null;
             $bundleAd->sort_order = max(1, $sortOrder);
             $bundleAd->is_active = $isActive;
 
@@ -456,11 +597,223 @@ class WebsiteContentController extends Controller
         ];
     }
 
+    /**
+     * @param array<int, array<string, mixed>> $featuredBuildsPayload
+     * @return array<string, int>
+     */
+    private function syncFeaturedBuilds(Request $request, array $featuredBuildsPayload): array
+    {
+        $created = 0;
+        $updated = 0;
+        $deleted = 0;
+
+        foreach ($featuredBuildsPayload as $index => $row) {
+            $featuredBuild = ! empty($row['id']) ? FeaturedBuild::query()->find((int) $row['id']) : null;
+            if (! $featuredBuild && ! empty($row['id'])) {
+                continue;
+            }
+
+            $delete = filter_var($row['_delete'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            if ($delete) {
+                if ($featuredBuild) {
+                    $this->deletePublicFile($featuredBuild->image_path);
+                    $this->deleteFeaturedBuildGalleryFiles((array) ($featuredBuild->gallery_images ?? []));
+                    $featuredBuild->delete();
+                    $deleted++;
+                }
+                continue;
+            }
+
+            $title = trim((string) ($row['title'] ?? ''));
+            $galleryImages = $this->resolveFeaturedBuildGalleryImages($request, $index, $featuredBuild);
+            $sortOrder = isset($row['sort_order']) ? (int) $row['sort_order'] : ($index + 1);
+            $isActive = filter_var($row['is_active'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $removeImage = filter_var($row['remove_image'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+            $hasAnyContent = $title !== ''
+                || count($galleryImages) > 0
+                || $request->hasFile("featured_builds.$index.image_file")
+                || $featuredBuild !== null;
+            if (! $hasAnyContent) {
+                continue;
+            }
+
+            $featuredBuild ??= new FeaturedBuild();
+            $featuredBuild->title = $title !== '' ? $title : null;
+            $featuredBuild->image_url = null;
+            $featuredBuild->gallery_images = $galleryImages !== [] ? $galleryImages : null;
+            $featuredBuild->sort_order = max(1, $sortOrder);
+            $featuredBuild->is_active = $isActive;
+
+            if ($removeImage && $featuredBuild->image_path) {
+                $this->deletePublicFile($featuredBuild->image_path);
+                $featuredBuild->image_path = null;
+            }
+
+            if ($request->hasFile("featured_builds.$index.image_file")) {
+                $file = $request->file("featured_builds.$index.image_file");
+                if ($file) {
+                    if ($featuredBuild->image_path) {
+                        $this->deletePublicFile($featuredBuild->image_path);
+                    }
+                    $featuredBuild->image_path = $file->store('website/featured-builds', 'public');
+                }
+            }
+
+            $wasExisting = $featuredBuild->exists;
+            $featuredBuild->save();
+
+            if ($wasExisting) {
+                $updated++;
+            } else {
+                $created++;
+            }
+        }
+
+        return [
+            'featured_builds_created' => $created,
+            'featured_builds_updated' => $updated,
+            'featured_builds_deleted' => $deleted,
+        ];
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $reviewsPayload
+     * @return array<string, int>
+     */
+    private function syncReviews(array $reviewsPayload): array
+    {
+        $created = 0;
+        $updated = 0;
+        $deleted = 0;
+
+        foreach ($reviewsPayload as $index => $row) {
+            $review = ! empty($row['id']) ? WebsiteReview::query()->find((int) $row['id']) : null;
+            if (! $review && ! empty($row['id'])) {
+                continue;
+            }
+
+            $delete = filter_var($row['_delete'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            if ($delete) {
+                if ($review) {
+                    $review->delete();
+                    $deleted++;
+                }
+                continue;
+            }
+
+            $title = trim((string) ($row['title'] ?? ''));
+            $content = trim((string) ($row['content'] ?? ''));
+            $authorName = trim((string) ($row['author_name'] ?? ''));
+            $rating = isset($row['rating']) ? (int) $row['rating'] : 5;
+            $sortOrder = isset($row['sort_order']) ? (int) $row['sort_order'] : ($index + 1);
+            $isActive = filter_var($row['is_active'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+            $hasAnyContent = $title !== '' || $content !== '' || $authorName !== '' || $review !== null;
+            if (! $hasAnyContent) {
+                continue;
+            }
+
+            $review ??= new WebsiteReview();
+
+            $review->title = $title;
+            $review->content = $content;
+            $review->author_name = $authorName;
+            $review->rating = max(1, min(5, $rating));
+            $review->sort_order = max(1, $sortOrder);
+            $review->is_active = $isActive;
+
+            $wasExisting = $review->exists;
+            $review->save();
+
+            if ($wasExisting) {
+                $updated++;
+            } else {
+                $created++;
+            }
+        }
+
+        return [
+            'reviews_created' => $created,
+            'reviews_updated' => $updated,
+            'reviews_deleted' => $deleted,
+        ];
+    }
+
     private function deletePublicFile(?string $path): void
     {
         if ($path) {
             Storage::disk('public')->delete($path);
         }
+    }
+
+    private function hasFeaturedBuildGalleryUpload(Request $request, int $index): bool
+    {
+        for ($galleryIndex = 0; $galleryIndex < self::MAX_FEATURED_BUILD_GALLERY_IMAGES; $galleryIndex++) {
+            if ($request->hasFile("featured_builds.$index.gallery_files.$galleryIndex")) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function resolveFeaturedBuildGalleryImages(Request $request, int $index, ?FeaturedBuild $featuredBuild): array
+    {
+        $galleryImages = collect((array) ($featuredBuild?->gallery_images ?? []))
+            ->map(fn ($image) => trim((string) $image))
+            ->take(self::MAX_FEATURED_BUILD_GALLERY_IMAGES)
+            ->values()
+            ->all();
+
+        while (count($galleryImages) < self::MAX_FEATURED_BUILD_GALLERY_IMAGES) {
+            $galleryImages[] = '';
+        }
+
+        for ($galleryIndex = 0; $galleryIndex < self::MAX_FEATURED_BUILD_GALLERY_IMAGES; $galleryIndex++) {
+            if (! $request->hasFile("featured_builds.$index.gallery_files.$galleryIndex")) {
+                continue;
+            }
+
+            $file = $request->file("featured_builds.$index.gallery_files.$galleryIndex");
+            if (! $file) {
+                continue;
+            }
+
+            $oldImage = trim((string) ($galleryImages[$galleryIndex] ?? ''));
+            if ($oldImage !== '' && ! $this->isRemoteImageSource($oldImage)) {
+                $this->deletePublicFile($oldImage);
+            }
+
+            $galleryImages[$galleryIndex] = $file->store('website/featured-builds/gallery', 'public');
+        }
+
+        return collect($galleryImages)
+            ->map(fn ($image) => trim((string) $image))
+            ->filter(fn (string $image) => $image !== '')
+            ->take(self::MAX_FEATURED_BUILD_GALLERY_IMAGES)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param array<int, mixed> $galleryImages
+     */
+    private function deleteFeaturedBuildGalleryFiles(array $galleryImages): void
+    {
+        collect($galleryImages)
+            ->map(fn ($image) => trim((string) $image))
+            ->filter(fn (string $image) => $image !== '')
+            ->filter(fn (string $image) => ! $this->isRemoteImageSource($image))
+            ->each(fn (string $image) => $this->deletePublicFile($image));
+    }
+
+    private function isRemoteImageSource(string $value): bool
+    {
+        return Str::startsWith(Str::lower(trim($value)), ['http://', 'https://']);
     }
 
     private function forgetPublicLandingCaches(): void
@@ -505,6 +858,21 @@ class WebsiteContentController extends Controller
         }
 
         return $url;
+    }
+
+    /**
+     * @param array<int, mixed> $images
+     * @return array<int, string>
+     */
+    private function normalizeGalleryImages(array $images): array
+    {
+        return collect($images)
+            ->map(fn ($image) => $this->normalizeImageUrl(trim((string) $image)))
+            ->filter(fn (string $image) => $image !== '')
+            ->unique()
+            ->take(self::MAX_FEATURED_BUILD_GALLERY_IMAGES)
+            ->values()
+            ->all();
     }
 
     /**
@@ -590,6 +958,71 @@ class WebsiteContentController extends Controller
                 'id' => null,
                 'image_url' => '',
                 'link_url' => '',
+                'is_active' => true,
+                'sort_order' => count($rows) + 1,
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildFeaturedBuildRows(Collection $featuredBuilds, int $maxRows): array
+    {
+        $rows = $featuredBuilds
+            ->map(fn (FeaturedBuild $featuredBuild) => [
+                'id' => $featuredBuild->id,
+                'title' => $featuredBuild->title,
+                'gallery_images' => collect((array) ($featuredBuild->gallery_image_src_list ?? []))
+                    ->take(self::MAX_FEATURED_BUILD_GALLERY_IMAGES)
+                    ->values()
+                    ->all(),
+                'is_active' => $featuredBuild->is_active,
+                'sort_order' => $featuredBuild->sort_order,
+            ])
+            ->values()
+            ->all();
+
+        while (count($rows) < $maxRows) {
+            $rows[] = [
+                'id' => null,
+                'title' => '',
+                'gallery_images' => [],
+                'is_active' => true,
+                'sort_order' => count($rows) + 1,
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildReviewRows(Collection $reviews, int $maxRows): array
+    {
+        $rows = $reviews
+            ->map(fn (WebsiteReview $review) => [
+                'id' => $review->id,
+                'title' => $review->title,
+                'content' => $review->content,
+                'author_name' => $review->author_name,
+                'rating' => $review->rating,
+                'is_active' => $review->is_active,
+                'sort_order' => $review->sort_order,
+            ])
+            ->values()
+            ->all();
+
+        while (count($rows) < $maxRows) {
+            $rows[] = [
+                'id' => null,
+                'title' => '',
+                'content' => '',
+                'author_name' => '',
+                'rating' => 5,
                 'is_active' => true,
                 'sort_order' => count($rows) + 1,
             ];

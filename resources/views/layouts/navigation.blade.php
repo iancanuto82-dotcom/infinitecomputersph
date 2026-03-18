@@ -71,27 +71,79 @@
             'Staff' => 'staff',
         ];
     @endphp
-    <nav x-data="{
+    <div x-data="{
             logoFailed: false,
             isTouch: window.matchMedia('(hover: none), (pointer: coarse)').matches,
             collapsed: true,
+            isPinned: false,
+            drawerOpen: false,
+            storageKey: 'admin.sidebar.pinned',
+            initSidebar() {
+                if (this.isTouch) {
+                    this.isPinned = true;
+                    this.collapsed = false;
+                    this.drawerOpen = false;
+                    return;
+                }
+
+                this.isPinned = window.localStorage.getItem(this.storageKey) === '1';
+                this.collapsed = !this.isPinned;
+            },
+            setPinned(nextState) {
+                this.isPinned = nextState;
+                this.collapsed = !nextState;
+
+                try {
+                    window.localStorage.setItem(this.storageKey, nextState ? '1' : '0');
+                } catch (_) {
+                    // Ignore local storage failures.
+                }
+            },
+            togglePinned() {
+                if (this.isTouch) return;
+                this.setPinned(!this.isPinned);
+            },
             expandSidebar() {
-                if (!this.isTouch) this.collapsed = false;
+                if (!this.isTouch && !this.isPinned) this.collapsed = false;
             },
             collapseSidebar() {
-                if (!this.isTouch) this.collapsed = true;
+                if (!this.isTouch && !this.isPinned) this.collapsed = true;
             }
         }"
-        x-init="collapsed = isTouch ? false : true"
+        x-init="initSidebar()"
+        x-on:keydown.escape.window="if (isTouch) drawerOpen = false"
         @mouseenter="expandSidebar()"
         @mouseleave="collapseSidebar()"
-        class="sticky top-0 self-start relative h-screen shrink-0 overflow-hidden border-r border-slate-200 bg-white transition-[width] duration-300 ease-out"
-        :class="collapsed ? 'w-[4.75rem]' : 'w-[16.5rem]'">
-        <aside class="flex h-full flex-col bg-white text-slate-700 transition-all duration-200">
+        class="relative shrink-0">
+        <div x-cloak x-show="isTouch && drawerOpen"
+            x-transition.opacity.duration.150ms
+            x-on:click="drawerOpen = false"
+            class="fixed inset-0 z-40 bg-slate-900/45"></div>
+
+        <button x-cloak x-show="isTouch && !drawerOpen" type="button"
+            x-transition.opacity.duration.150ms
+            x-on:click="drawerOpen = true"
+            aria-label="Open sidebar"
+            class="fixed left-3 top-3 z-40 inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-lg">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <path d="M4 6h16M4 12h16M4 18h16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+        </button>
+
+        <nav class="h-screen overflow-hidden border-r border-slate-200 bg-white transition-[width,transform] duration-300 ease-out"
+            :class="isTouch
+                ? (drawerOpen
+                    ? 'fixed inset-y-0 left-0 z-50 w-[16.5rem] translate-x-0 shadow-2xl'
+                    : 'fixed inset-y-0 left-0 z-50 w-[16.5rem] -translate-x-full shadow-2xl')
+                : (collapsed
+                    ? 'sticky top-0 self-start w-[4.75rem]'
+                    : 'sticky top-0 self-start w-[16.5rem]')">
+            <aside class="flex h-full flex-col bg-white text-slate-700 transition-all duration-200"
+                x-on:click.capture="if (isTouch && $event.target.closest('a,button[type=submit]')) drawerOpen = false">
             <div class="border-b border-slate-200 py-4" :class="collapsed ? 'px-2' : 'px-3'">
                 <a href="{{ $dashboardHref }}" class="flex items-center gap-3 rounded-xl bg-slate-50 ring-1 ring-slate-200" :class="collapsed ? 'w-full justify-center px-2 py-2' : 'px-2.5 py-2.5'">
                     <img src="{{ $appLogo }}" alt="{{ config('app.name') }} logo"
-                        class="h-9 w-9 shrink-0 object-contain"
+                        class="app-logo-bordered h-9 w-9 shrink-0 object-contain"
                         loading="lazy"
                         referrerpolicy="no-referrer"
                         x-show="!logoFailed"
@@ -112,6 +164,37 @@
                         <div class="truncate text-sm font-semibold text-slate-900">{{ config('app.name') }}</div>
                     </div>
                 </a>
+
+                <button x-show="!isTouch" x-cloak type="button"
+                    @click="togglePinned()"
+                    :aria-pressed="isPinned ? 'true' : 'false'"
+                    :aria-label="isPinned ? 'Unpin sidebar' : 'Pin sidebar'"
+                    class="group relative mt-2 flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800"
+                    :class="collapsed ? 'justify-center px-2' : ''">
+                    <span class="inline-flex h-5 w-5 items-center justify-center">
+                        <svg x-show="!isPinned" x-cloak class="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                            <path d="M8 4h8l-1 5 3 3-1.5 1.5-2.5-2.5V20l-2 2-2-2v-9l-2.5 2.5L6 12l3-3-1-5z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <svg x-show="isPinned" x-cloak class="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                            <path d="M8 4h8l-1 5 3 3-1.5 1.5-2.5-2.5V20l-2 2-2-2v-9l-2.5 2.5L6 12l3-3-1-5z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M4 4l16 16" stroke-width="1.7" stroke-linecap="round" />
+                        </svg>
+                    </span>
+
+                    <span x-show="!collapsed" x-cloak
+                        x-transition:enter="transition ease-out duration-200 delay-75"
+                        x-transition:enter-start="opacity-0 -translate-x-2"
+                        x-transition:enter-end="opacity-100 translate-x-0"
+                        x-transition:leave="transition ease-in duration-150"
+                        x-transition:leave-start="opacity-100 translate-x-0"
+                        x-transition:leave-end="opacity-0 -translate-x-2"
+                        x-text="isPinned ? 'Unpin sidebar' : 'Pin sidebar'"></span>
+
+                    <span x-show="collapsed" x-cloak
+                        class="pointer-events-none absolute left-full top-1/2 z-20 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md border border-slate-200 bg-white px-2 py-1 text-xs normal-case tracking-normal text-slate-700 opacity-0 shadow-md transition group-hover:opacity-100"
+                        x-text="isPinned ? 'Unpin sidebar' : 'Pin sidebar'">
+                    </span>
+                </button>
             </div>
 
             <div class="flex-1 overflow-hidden px-3 py-4">
@@ -247,8 +330,9 @@
                     </button>
                 </form>
             </div>
-        </aside>
-    </nav>
+            </aside>
+        </nav>
+    </div>
 @else
     <nav x-data="{ open: false, logoFailed: false }" class="bg-white border-b border-gray-100">
         <div class="{{ $containerMaxWidth }} mx-auto px-4 sm:px-6 lg:px-8">
@@ -257,7 +341,7 @@
                     <div class="shrink-0 flex items-center">
                         <a href="{{ $dashboardHref }}" class="inline-flex items-center justify-center rounded-md p-1">
                             <img src="{{ $appLogo }}" alt="{{ config('app.name') }} logo"
-                                class="h-9 w-9 object-contain"
+                                class="app-logo-bordered h-9 w-9 object-contain"
                                 loading="lazy"
                                 referrerpolicy="no-referrer"
                                 x-show="!logoFailed"

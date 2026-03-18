@@ -458,8 +458,9 @@
 
                                     <div class="sm:col-span-2 text-right">
                                         <div class="theme-muted text-xs">Line total</div>
-                                        <div class="text-base font-semibold tabular-nums text-gray-900">
-                                            PHP <span x-text="formatMoney(lineTotal(category.id))"></span>
+                                        <div class="inline-flex w-full items-baseline justify-end gap-1 whitespace-nowrap text-base font-semibold tabular-nums text-gray-900">
+                                            <span>PHP</span>
+                                            <span x-text="formatMoney(lineTotal(category.id))"></span>
                                         </div>
                                     </div>
                                 </div>
@@ -513,8 +514,9 @@
 
                                                         <div class="sm:col-span-2 text-right">
                                                             <div class="theme-muted text-xs">Line total</div>
-                                                            <div class="text-base font-semibold tabular-nums text-gray-900">
-                                                                PHP <span x-text="formatMoney(storageRowLineTotal(row))"></span>
+                                                            <div class="inline-flex w-full items-baseline justify-end gap-1 whitespace-nowrap text-base font-semibold tabular-nums text-gray-900">
+                                                                <span>PHP</span>
+                                                                <span x-text="formatMoney(storageRowLineTotal(row))"></span>
                                                             </div>
                                                             <button type="button"
                                                                 class="mt-1 text-xs font-medium text-rose-700 hover:text-rose-600"
@@ -565,7 +567,7 @@
                         <div class="mt-4 space-y-2" x-show="pickedItems.length > 0">
                             <template x-for="(item, idx) in pickedItems" :key="`${item.category}_${idx}`">
                                 <div class="theme-card rounded-md px-3 py-2">
-                                    <div class="flex items-start justify-between gap-2">
+                                    <div class="grid grid-cols-[minmax(0,1fr)_9rem] items-start gap-2 sm:grid-cols-[minmax(0,1fr)_10.5rem]">
                                         <div class="min-w-0">
                                             <div class="theme-muted text-xs font-semibold uppercase tracking-wide" x-text="item.category"></div>
                                             <div class="truncate text-sm font-medium text-gray-900" x-text="item.name"></div>
@@ -573,8 +575,9 @@
                                                 Qty <span x-text="item.qty"></span>
                                             </div>
                                         </div>
-                                        <div class="text-sm font-semibold tabular-nums text-gray-900">
-                                            PHP <span x-text="formatMoney(item.total)"></span>
+                                        <div class="inline-flex w-[9rem] items-baseline justify-end gap-1 whitespace-nowrap text-right text-sm font-semibold tabular-nums text-gray-900 sm:w-[10.5rem]">
+                                            <span>PHP</span>
+                                            <span x-text="formatMoney(item.total)"></span>
                                         </div>
                                     </div>
                                 </div>
@@ -588,7 +591,10 @@
                             </div>
                             <div class="mt-2 flex items-center justify-between text-base font-semibold text-gray-900">
                                 <span>Estimated Total</span>
-                                <span class="tabular-nums">PHP <span x-text="formatMoney(subtotal)"></span></span>
+                                <span class="inline-flex w-[9rem] items-baseline justify-end gap-1 tabular-nums whitespace-nowrap text-right sm:w-[10.5rem]">
+                                    <span>PHP</span>
+                                    <span x-text="formatMoney(subtotal)"></span>
+                                </span>
                             </div>
                         </div>
                     </div>

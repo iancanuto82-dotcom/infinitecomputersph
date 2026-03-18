@@ -1149,7 +1149,7 @@
                         };
                         const excludeByKey = {
                             processor: ['cooler', 'aio', 'heatsink', 'liquid', 'fan', 'radiator', 'motherboard', 'mobo', 'chipset', 'socket', 'lga', 'am4', 'am5', 'h610', 'h510', 'h410', 'h310', 'b450', 'b550', 'a320', 'a520', 'x570', 'z690', 'z790'],
-                            cpu_cooler: ['memory', 'ram', 'ddr', 'cable', 'extension', 'adapter', 'converter', 'laptop', 'notebook'],
+                            cpu_cooler: ['memory', 'ram', 'ddr', 'cable', 'extension', 'adapter', 'converter', 'laptop', 'notebook', 'case', 'chassis'],
                             ram: ['case', 'chassis', 'motherboard', 'mobo', 'psu', 'power supply', 'gpu', 'graphics', 'ssd', 'hdd', 'nvme'],
                             storage: ['caddy', 'enclosure', 'adapter', 'converter', 'cable', 'dock', 'case', 'tray'],
                             fans: ['case w/', 'case with', 'chassis', 'keyboard', 'mouse', 'splitter', 'hub', 'controller', 'psu', 'power supply', 'kit'],
