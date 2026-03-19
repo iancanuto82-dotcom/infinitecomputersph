@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\PublicMedia;
 use Illuminate\Database\Eloquent\Model;
 
 class FeaturedBrand extends Model
@@ -21,7 +22,7 @@ class FeaturedBrand extends Model
     public function getLogoSrcAttribute(): ?string
     {
         if ($this->logo_path) {
-            return '/storage/'.ltrim((string) $this->logo_path, '/');
+            return PublicMedia::url((string) $this->logo_path);
         }
 
         if ($this->logo_url) {

@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\PublicMedia;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 
 class FeaturedBuild extends Model
 {
@@ -25,7 +25,7 @@ class FeaturedBuild extends Model
     public function getImageSrcAttribute(): ?string
     {
         if ($this->image_path) {
-            return Storage::disk('public')->url($this->image_path);
+            return PublicMedia::url((string) $this->image_path);
         }
 
         if ($this->image_url) {
@@ -56,7 +56,7 @@ class FeaturedBuild extends Model
                     return $value;
                 }
 
-                return Storage::disk('public')->url($value);
+                return PublicMedia::url($value);
             })
             ->filter(fn (string $image) => $image !== '')
             ->unique()

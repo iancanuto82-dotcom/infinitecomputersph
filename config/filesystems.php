@@ -17,6 +17,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Public Media Disk
+    |--------------------------------------------------------------------------
+    |
+    | Uploaded product and website media should use a disk that can be swapped
+    | per environment. Keep "public" for local development and point this to
+    | "s3" in Laravel Cloud when object storage is attached.
+    |
+    */
+
+    'public_media_disk' => env('PUBLIC_MEDIA_DISK', 'public'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |

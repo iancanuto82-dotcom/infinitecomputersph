@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\PublicMedia;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 
 class BundleAd extends Model
 {
@@ -23,7 +23,7 @@ class BundleAd extends Model
     public function getImageSrcAttribute(): ?string
     {
         if ($this->image_path) {
-            return Storage::disk('public')->url($this->image_path);
+            return PublicMedia::url((string) $this->image_path);
         }
 
         if ($this->image_url) {

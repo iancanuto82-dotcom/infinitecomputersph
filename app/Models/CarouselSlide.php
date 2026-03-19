@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\PublicMedia;
 use Illuminate\Database\Eloquent\Model;
 
 class CarouselSlide extends Model
@@ -23,7 +24,7 @@ class CarouselSlide extends Model
     public function getImageSrcAttribute(): ?string
     {
         if ($this->image_path) {
-            return '/storage/'.ltrim((string) $this->image_path, '/');
+            return PublicMedia::url((string) $this->image_path);
         }
 
         if ($this->image_url) {

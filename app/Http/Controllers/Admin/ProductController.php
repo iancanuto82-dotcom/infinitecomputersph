@@ -15,6 +15,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use App\Support\SpreadsheetReader;
 use App\Support\AuditLogger;
+use App\Support\PublicMedia;
 use App\Support\PublicCatalogCache;
 use Illuminate\Support\Collection;
 
@@ -168,7 +169,7 @@ class ProductController extends Controller
         }
 
         if ($request->hasFile('image')) {
-            $payload['image_path'] = $request->file('image')->store('products', 'public');
+            $payload['image_path'] = $request->file('image')->store('products', PublicMedia::diskName());
         }
 
         $product = Product::create($payload);
@@ -207,16 +208,16 @@ class ProductController extends Controller
         $before = $product->only(['name', 'category_id', 'price', 'cost_price', 'initial_stock', 'stock', 'is_active']);
 
         if ($request->boolean('remove_image') && $product->image_path) {
-            Storage::disk('public')->delete($product->image_path);
+            Storage::disk(PublicMedia::diskName())->delete($product->image_path);
             $payload['image_path'] = null;
         }
 
         if ($request->hasFile('image')) {
             if ($product->image_path) {
-                Storage::disk('public')->delete($product->image_path);
+                Storage::disk(PublicMedia::diskName())->delete($product->image_path);
             }
 
-            $payload['image_path'] = $request->file('image')->store('products', 'public');
+            $payload['image_path'] = $request->file('image')->store('products', PublicMedia::diskName());
         }
 
         $product->update($payload);
@@ -258,7 +259,7 @@ class ProductController extends Controller
         ]);
 
         if ($product->image_path) {
-            Storage::disk('public')->delete($product->image_path);
+            Storage::disk(PublicMedia::diskName())->delete($product->image_path);
         }
 
         $product->delete();
@@ -319,7 +320,7 @@ class ProductController extends Controller
             ]);
 
             if ($product->image_path) {
-                Storage::disk('public')->delete($product->image_path);
+                Storage::disk(PublicMedia::diskName())->delete($product->image_path);
             }
 
             $product->delete();

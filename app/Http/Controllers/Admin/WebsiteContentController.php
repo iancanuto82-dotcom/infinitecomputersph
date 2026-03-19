@@ -10,6 +10,7 @@ use App\Models\FeaturedBrand;
 use App\Models\WebsiteReview;
 use App\Support\AuditLogger;
 use App\Support\PublicCatalogCache;
+use App\Support\PublicMedia;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -420,7 +421,7 @@ class WebsiteContentController extends Controller
                     if ($slide->image_path) {
                         $this->deletePublicFile($slide->image_path);
                     }
-                    $slide->image_path = $file->store('website/carousel', 'public');
+                    $slide->image_path = $file->store('website/carousel', PublicMedia::diskName());
                 }
             }
 
@@ -496,7 +497,7 @@ class WebsiteContentController extends Controller
                     if ($brand->logo_path) {
                         $this->deletePublicFile($brand->logo_path);
                     }
-                    $brand->logo_path = $file->store('website/brands', 'public');
+                    $brand->logo_path = $file->store('website/brands', PublicMedia::diskName());
                 }
             }
 
@@ -561,7 +562,7 @@ class WebsiteContentController extends Controller
                     if ($bundleAd->image_path) {
                         $this->deletePublicFile($bundleAd->image_path);
                     }
-                    $bundleAd->image_path = $file->store('website/bundles', 'public');
+                    $bundleAd->image_path = $file->store('website/bundles', PublicMedia::diskName());
                 }
             } elseif ($imageUrl !== '') {
                 if ($bundleAd->image_path) {
@@ -656,7 +657,7 @@ class WebsiteContentController extends Controller
                     if ($featuredBuild->image_path) {
                         $this->deletePublicFile($featuredBuild->image_path);
                     }
-                    $featuredBuild->image_path = $file->store('website/featured-builds', 'public');
+                    $featuredBuild->image_path = $file->store('website/featured-builds', PublicMedia::diskName());
                 }
             }
 
@@ -743,7 +744,7 @@ class WebsiteContentController extends Controller
     private function deletePublicFile(?string $path): void
     {
         if ($path) {
-            Storage::disk('public')->delete($path);
+            Storage::disk(PublicMedia::diskName())->delete($path);
         }
     }
 
@@ -788,7 +789,7 @@ class WebsiteContentController extends Controller
                 $this->deletePublicFile($oldImage);
             }
 
-            $galleryImages[$galleryIndex] = $file->store('website/featured-builds/gallery', 'public');
+            $galleryImages[$galleryIndex] = $file->store('website/featured-builds/gallery', PublicMedia::diskName());
         }
 
         return collect($galleryImages)
