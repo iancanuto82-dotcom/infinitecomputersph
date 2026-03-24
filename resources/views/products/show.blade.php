@@ -22,7 +22,7 @@
                 </a>
                 <h1 class="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">{{ $product->name }}</h1>
                 <p class="mt-2 text-sm text-white/85">
-                    {{ $product->category->name ?? 'Uncategorized' }}
+                    {{ $product->category?->parent ? $product->category->parent->name.' / '.$product->category->name : ($product->category->name ?? 'Uncategorized') }}
                 </p>
             </div>
 
@@ -65,7 +65,9 @@
                     </div>
                     <div class="flex items-start justify-between gap-3">
                         <dt class="theme-muted">Category</dt>
-                        <dd class="font-medium text-gray-900">{{ $product->category->name ?? 'Uncategorized' }}</dd>
+                        <dd class="font-medium text-gray-900">
+                            {{ $product->category?->parent ? $product->category->parent->name.' / '.$product->category->name : ($product->category->name ?? 'Uncategorized') }}
+                        </dd>
                     </div>
                     <div class="flex items-start justify-between gap-3">
                         <dt class="theme-muted">SKU</dt>
@@ -126,7 +128,9 @@
                         @endif
 
                         <div class="text-sm font-semibold text-gray-900">{{ $related->name }}</div>
-                        <div class="theme-muted mt-1 text-xs">{{ $related->category->name ?? 'Uncategorized' }}</div>
+                        <div class="theme-muted mt-1 text-xs">
+                            {{ $related->category?->parent ? $related->category->parent->name.' / '.$related->category->name : ($related->category->name ?? 'Uncategorized') }}
+                        </div>
                         <div class="mt-3 text-base font-semibold tabular-nums text-gray-900">&#8369;{{ number_format((float) $related->price, 2) }}</div>
                         <div class="theme-muted mt-2 text-xs group-hover:text-gray-800">View product -></div>
                     </a>

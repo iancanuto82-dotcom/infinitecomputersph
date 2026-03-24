@@ -96,7 +96,7 @@ class ProductController extends Controller
 
         $productsQuery = Product::query()
             ->select(['id', 'name', 'description', 'image_path', 'image_url', 'price', 'stock', 'category_id'])
-            ->with('category:id,name')
+            ->with(['category:id,name,parent_id', 'category.parent:id,name'])
             ->where('is_active', true);
 
         if ($search !== '') {
@@ -154,11 +154,36 @@ class ProductController extends Controller
                             $categoryName = Str::lower((string) optional($product->category)->name);
                             $productName = Str::lower((string) $product->name);
                             $haystack = $categoryName.' '.$productName;
+                            $scopedBySubcategory = count($sectionCategoryIds) > 0;
 
-                            if (count($sectionCategoryIds) > 0) {
+                            if ($scopedBySubcategory) {
                                 if (! in_array((int) $product->category_id, $sectionCategoryIds, true)) {
                                     return false;
                                 }
+                            }
+
+                            if (($section['key'] ?? '') === 'processor') {
+                                $processorCategoryNeedles = ['processor', 'cpu'];
+                                $processorNameNeedles = ['processor', 'cpu', 'ryzen', 'intel', 'athlon', 'pentium', 'celeron', 'core i', 'xeon'];
+                                $processorHardExcludes = ['cooler', 'fan', 'aio', 'heatsink', 'liquid', 'radiator', 'motherboard', 'mobo', 'mainboard', 'chipset'];
+
+                                $includeMatch = $scopedBySubcategory
+                                    || collect($processorCategoryNeedles)->contains(
+                                        fn (string $needle): bool => str_contains($categoryName, $needle)
+                                    )
+                                    || collect($processorNameNeedles)->contains(
+                                        fn (string $needle): bool => str_contains($productName, $needle)
+                                    );
+
+                                if (! $includeMatch) {
+                                    return false;
+                                }
+
+                                $hardExcluded = collect($processorHardExcludes)->contains(
+                                    fn (string $needle): bool => str_contains($haystack, $needle)
+                                );
+
+                                return ! $hardExcluded;
                             }
 
                             if (($section['key'] ?? '') === 'desktop_ram') {
@@ -425,11 +450,11 @@ class ProductController extends Controller
             abort(404);
         }
 
-        $product->loadMissing('category:id,name');
+        $product->loadMissing(['category:id,name,parent_id', 'category.parent:id,name']);
 
         $relatedProducts = Product::query()
             ->select(['id', 'name', 'image_path', 'image_url', 'price', 'category_id'])
-            ->with('category:id,name')
+            ->with(['category:id,name,parent_id', 'category.parent:id,name'])
             ->where('is_active', true)
             ->where('id', '!=', $product->id)
             ->when(
@@ -482,25 +507,42 @@ class ProductController extends Controller
 
     private function applyProductCatalogSearch(Builder $query, string $search): void
     {
-        $trimmedSearch = trim($search);
-        if ($trimmedSearch === '') {
+        $normalizedSearch = $this->normalizeSearchPhrase($search);
+        if ($normalizedSearch === '') {
             return;
         }
 
-        $booleanQuery = $this->toBooleanFullTextQuery($trimmedSearch);
-        if ($this->canUseProductFullTextSearch() && $booleanQuery !== '') {
-            $query->whereRaw(
-                'MATCH(name, description) AGAINST (? IN BOOLEAN MODE)',
-                [$booleanQuery]
-            );
+        $like = '%'.$normalizedSearch.'%';
 
-            return;
-        }
-
-        $query->where(function (Builder $builder) use ($trimmedSearch): void {
-            $builder->where('name', 'like', "%{$trimmedSearch}%")
-                ->orWhere('description', 'like', "%{$trimmedSearch}%");
+        $query->where(function (Builder $builder) use ($like): void {
+            $builder->whereRaw($this->normalizedLikeExpression('name'), [$like])
+                ->orWhereRaw($this->normalizedLikeExpression('description'), [$like])
+                ->orWhereHas('category', function (Builder $categoryQuery) use ($like): void {
+                    $categoryQuery->whereRaw($this->normalizedLikeExpression('name'), [$like])
+                        ->orWhereHas('parent', function (Builder $parentQuery) use ($like): void {
+                            $parentQuery->whereRaw($this->normalizedLikeExpression('name'), [$like]);
+                        });
+                });
         });
+    }
+
+    private function normalizeSearchPhrase(string $value): string
+    {
+        $normalized = Str::lower(trim($value));
+        if ($normalized === '') {
+            return '';
+        }
+
+        $normalized = preg_replace('/[^\pL\pN]+/u', ' ', $normalized) ?? '';
+
+        return trim(preg_replace('/\s+/u', ' ', $normalized) ?? '');
+    }
+
+    private function normalizedLikeExpression(string $column): string
+    {
+        $wrappedColumn = DB::getQueryGrammar()->wrap($column);
+
+        return "LOWER(TRIM(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE({$wrappedColumn}, '/', ' '), '-', ' '), '_', ' '), '(', ' '), ')', ' '), ',', ' '), '.', ' '))) LIKE ?";
     }
 
     private function canUseProductFullTextSearch(): bool

@@ -83,7 +83,16 @@
                         <tbody class="divide-y divide-black/10">
                             @foreach ($sale->items as $item)
                                 <tr>
-                                    <td class="px-4 py-2 font-medium text-gray-900">{{ $item->product_name }}</td>
+                                    <td class="px-4 py-2 font-medium text-gray-900">
+                                        <div class="flex items-center gap-2">
+                                            <span>{{ $item->product_name }}</span>
+                                            @if (is_null($item->product_id))
+                                                <span class="inline-flex items-center rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700 ring-1 ring-inset ring-sky-200">
+                                                    Service
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </td>
                                     <td class="px-4 py-2 text-right tabular-nums">{{ (int) $item->qty }}</td>
                                     <td class="px-4 py-2 text-right tabular-nums">&#8369;{{ number_format((float) $item->unit_price, 2) }}</td>
                                     <td class="px-4 py-2 text-right tabular-nums">&#8369;{{ number_format((float) $item->line_total, 2) }}</td>

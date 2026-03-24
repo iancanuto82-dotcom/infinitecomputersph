@@ -15,11 +15,44 @@
                     @csrf
                     @method('PUT')
 
+                    <div class="rounded-lg bg-gray-50 px-4 py-3 ring-1 ring-black/10">
+                        <div class="text-sm font-medium text-gray-900">
+                            {{ $category->parent ? $category->parent->name.' / '.$category->name : $category->name }}
+                        </div>
+                        <div class="mt-1 text-xs text-gray-600">
+                            {{ $category->parent ? 'This category is currently a subcategory.' : 'This category is currently a main category.' }}
+                            @if ($category->children->isNotEmpty())
+                                It already has {{ $category->children->count() }} subcategor{{ $category->children->count() === 1 ? 'y' : 'ies' }}, so it cannot be moved under another parent.
+                            @endif
+                        </div>
+                    </div>
+
                     <div>
                         <label for="name" class="block text-sm font-medium text-gray-900">Name</label>
                         <input id="name" type="text" name="name" value="{{ old('name', $category->name) }}"
                             class="mt-1 block w-full rounded-md border-black/20 bg-white shadow-sm focus:border-orange-500 focus:ring-orange-500">
                         <x-input-error class="mt-2" :messages="$errors->get('name')" />
+                    </div>
+
+                    <div>
+                        <label for="parent_id" class="block text-sm font-medium text-gray-900">Parent category</label>
+                        <select id="parent_id" name="parent_id"
+                            class="mt-1 block w-full rounded-md border-black/20 bg-white shadow-sm focus:border-orange-500 focus:ring-orange-500"
+                            {{ $category->children->isNotEmpty() ? 'disabled' : '' }}>
+                            <option value="">None (main category)</option>
+                            @foreach(($parentCategories ?? collect()) as $parentCategory)
+                                <option value="{{ $parentCategory->id }}" {{ (string) old('parent_id', $category->parent_id) === (string) $parentCategory->id ? 'selected' : '' }}>
+                                    {{ $parentCategory->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @if ($category->children->isNotEmpty())
+                            <input type="hidden" name="parent_id" value="{{ $category->parent_id }}">
+                        @endif
+                        <div class="mt-1 text-xs text-gray-600">
+                            Choose a main category here if this should appear as a subcategory.
+                        </div>
+                        <x-input-error class="mt-2" :messages="$errors->get('parent_id')" />
                     </div>
 
                     <div class="flex flex-wrap items-center gap-3 pt-2">
@@ -37,4 +70,3 @@
         </div>
     </div>
 </x-app-layout>
-

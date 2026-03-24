@@ -110,7 +110,7 @@
                 <div class="{{ $containerMaxWidth }} mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="grid grid-cols-1 items-center gap-3 py-3 md:grid-cols-[1fr_minmax(0,42rem)_1fr]">
                         <a href="{{ route('home') }}" class="hidden items-center gap-3 md:inline-flex md:justify-self-start">
-                            <span class="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-white/20 ring-1 ring-white/30">
+                            <span class="inline-flex h-12 w-12 items-center justify-center overflow-hidden">
                                 <img src="{{ $appLogo }}" alt="{{ config('app.name') }} logo"
                                     class="app-logo-bordered h-10 w-10 object-contain" loading="lazy" referrerpolicy="no-referrer"
                                     x-show="!logoFailed" x-on:error="logoFailed = true">
@@ -346,7 +346,7 @@
                 <div class="theme-footer-grid">
                     <section class="space-y-4">
                         <a href="{{ route('home') }}" class="inline-flex items-center gap-3">
-                            <span class="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-white/15 ring-1 ring-white/25">
+                            <span class="inline-flex h-12 w-12 items-center justify-center overflow-hidden">
                                 <img src="{{ $appLogo }}" alt="{{ config('app.name') }} logo"
                                     class="app-logo-bordered h-10 w-10 object-contain" loading="lazy" referrerpolicy="no-referrer">
                             </span>
@@ -410,6 +410,8 @@
                 </div>
             </div>
         </footer>
+
+        @stack('page-modals')
     </div>
 </body>
 </html>

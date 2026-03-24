@@ -1078,6 +1078,31 @@
                         return copy;
                     },
 
+                    dedupeProducts(list, preferredProductId = null) {
+                        const preferredId = preferredProductId ? String(preferredProductId) : '';
+                        const unique = new Map();
+
+                        (Array.isArray(list) ? list : []).forEach((product) => {
+                            const categoryId = String(product?.category_id ?? '');
+                            const normalizedName = String(product?.name || '')
+                                .trim()
+                                .toLowerCase()
+                                .replace(/\s+/g, ' ');
+
+                            const key = `${categoryId}::${normalizedName}`;
+                            if (!unique.has(key)) {
+                                unique.set(key, product);
+                                return;
+                            }
+
+                            if (preferredId && String(product?.id ?? '') === preferredId) {
+                                unique.set(key, product);
+                            }
+                        });
+
+                        return Array.from(unique.values());
+                    },
+
                     sectionUsesSubcategories(key) {
                         const normalized = String(key || '').toLowerCase();
                         return normalized === 'processor' || normalized === 'motherboard' || normalized === 'ram';
@@ -1196,11 +1221,15 @@
                             if (key === 'processor') {
                                 const processorCategoryInclude = ['processor', 'cpu'];
                                 const processorNameInclude = ['processor', 'cpu', 'ryzen', 'intel', 'athlon', 'pentium', 'celeron', 'core i', 'xeon'];
+                                const processorHardExclude = ['cooler', 'aio', 'heatsink', 'liquid', 'fan', 'radiator', 'motherboard', 'mobo', 'mainboard', 'chipset'];
                                 const includeMatch = this.categoryMatchesAny(categoryName, processorCategoryInclude)
+                                    || scopedBySubcategory
                                     || this.nameMatchesAny(p, processorNameInclude)
                                     || exactMatch;
 
-                                return includeMatch && this.matchesNone(p, exclude) && this.isCompatibleProduct(key, p);
+                                return includeMatch
+                                    && this.matchesNone(p, processorHardExclude)
+                                    && this.isCompatibleProduct(key, p);
                             }
 
                             return (scopedBySubcategory || this.matchesAny(p, include) || exactMatch)
@@ -1209,7 +1238,7 @@
                         });
 
                         if (filtered.length) {
-                            return this.sortedProducts(filtered);
+                            return this.sortedProducts(this.dedupeProducts(filtered));
                         }
 
                         if (key === 'cpu_cooler') {
@@ -1220,7 +1249,7 @@
                             return [];
                         }
 
-                        return this.sortedProducts(this.products);
+                        return this.sortedProducts(this.dedupeProducts(this.products));
                     },
 
                     groupedOptionsForWithSelected(key, selectedProductId) {
@@ -1266,7 +1295,7 @@
                             return options;
                         }
 
-                        return this.sortedProducts([...options, selectedProduct]);
+                        return this.sortedProducts(this.dedupeProducts([...options, selectedProduct], selectedProductId));
                     },
 
                     get subtotal() {

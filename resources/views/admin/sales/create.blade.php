@@ -75,19 +75,37 @@
                         <div class="mt-3 space-y-3">
                             <template x-for="(row, idx) in rows" :key="row.key">
                                 <div class="rounded-lg bg-gray-50/80 p-4 ring-1 ring-inset ring-black/10">
+                                    <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+                                        <label class="inline-flex items-center gap-2 text-sm text-gray-900/80">
+                                            <input type="hidden" :name="`items[${idx}][is_service]`" value="0">
+                                            <input type="checkbox"
+                                                :name="`items[${idx}][is_service]`"
+                                                value="1"
+                                                x-model="row.is_service"
+                                                @change="toggleServiceRow(row)"
+                                                class="rounded border-gray-300 text-gray-900 shadow-sm focus:ring-orange-500">
+                                            Mark as service
+                                        </label>
+
+                                        <p x-show="row.is_service" x-cloak class="text-xs font-medium text-gray-600">
+                                            Service rows do not use catalog stock.
+                                        </p>
+                                    </div>
+
                                     <div class="sale-item-row">
                                         <div class="sale-item-field min-w-0 relative">
                                             <label class="sale-item-field-label"
                                                 :for="`sale_item_product_search_${idx}_${row.key}`">
-                                                Product
+                                                <span x-text="row.is_service ? 'Service' : 'Product'"></span>
                                             </label>
                                             <input type="hidden"
                                                 :name="`items[${idx}][product_id]`"
-                                                :value="row.product_id || ''">
+                                                :value="row.is_service ? '' : (row.product_id || '')">
 
                                             <input type="text"
                                                 :id="`sale_item_product_search_${idx}_${row.key}`"
                                                 class="block h-[42px] w-full rounded-md border-black/20 bg-white px-3 text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500"
+                                                x-show="!row.is_service"
                                                 x-model="row.search"
                                                 @focus="openProductSearch(row)"
                                                 @input="onProductSearchInput(row)"
@@ -99,7 +117,17 @@
                                                 placeholder="Search product by name"
                                                 aria-label="Product search">
 
-                                            <div x-show="row.searchOpen" x-cloak
+                                            <input type="text"
+                                                :name="`items[${idx}][product_name]`"
+                                                :id="`sale_item_service_name_${idx}_${row.key}`"
+                                                class="block h-[42px] w-full rounded-md border-black/20 bg-white px-3 text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500"
+                                                x-show="row.is_service"
+                                                x-cloak
+                                                x-model="row.service_name"
+                                                placeholder="Enter service name"
+                                                aria-label="Service name">
+
+                                            <div x-show="!row.is_service && row.searchOpen" x-cloak
                                                 class="absolute z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-black/10 bg-white shadow-lg">
                                                 <template x-for="(p, pIdx) in filteredProducts(row)" :key="p.id">
                                                     <button type="button"
@@ -149,18 +177,22 @@
                                             </label>
                                             <input type="number" min="0" step="0.01"
                                                 :id="`sale_item_unit_price_${idx}_${row.key}`"
-                                                class="block h-[42px] w-full rounded-md border-black/20 px-3 text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500 {{ $canEditSalePrice ? 'bg-white' : 'bg-gray-100' }}"
+                                                class="block h-[42px] w-full rounded-md border-black/20 px-3 text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500"
+                                                :class="canEditUnitPrice(row) ? 'bg-white' : 'bg-gray-100'"
                                                 :name="`items[${idx}][unit_price]`"
                                                 x-model.number="row.unit_price"
-                                                :readonly="!canEditPrice"
+                                                :readonly="!canEditUnitPrice(row)"
                                                 aria-label="Unit price"
                                                 placeholder="â‚±">
                                         </div>
 
                                         <div class="sale-item-actions">
                                             <div class="sale-item-meta tabular-nums">
-                                                <span x-show="row.product_id">
+                                                <span x-show="!row.is_service && row.product_id">
                                                     Stock: <span class="font-medium" :class="stockToneClass(productStock(row.product_id))" x-text="productStock(row.product_id)"></span>
+                                                </span>
+                                                <span x-show="row.is_service" x-cloak class="font-medium text-sky-700">
+                                                    Service
                                                 </span>
                                             </div>
                                             <button type="button"
@@ -365,7 +397,9 @@
                 createRow() {
                     return {
                         key: crypto?.randomUUID?.() ?? String(Date.now() + Math.random()),
+                        is_service: false,
                         product_id: '',
+                        service_name: '',
                         qty: 1,
                         unit_price: 0,
                         search: '',
@@ -389,9 +423,26 @@
                     if (this.rows.length <= 1) return
                     this.rows.splice(idx, 1)
                 },
+                toggleServiceRow(row) {
+                    row.is_service = !!row.is_service
+                    row.searchOpen = false
+                    row.searchCursor = -1
+
+                    if (row.is_service) {
+                        row.product_id = ''
+                        row.search = ''
+                        return
+                    }
+
+                    row.service_name = ''
+                    row.unit_price = 0
+                },
                 productById(productId) {
                     const id = Number(productId)
                     return this.products.find(p => Number(p.id) === id) ?? null
+                },
+                canEditUnitPrice(row) {
+                    return this.canEditPrice || !!row?.is_service
                 },
                 productStock(productId) {
                     return Number(this.productById(productId)?.stock ?? 0)
@@ -418,10 +469,12 @@
                     return 'text-gray-600'
                 },
                 openProductSearch(row) {
+                    if (row.is_service) return
                     row.searchOpen = true
                     row.searchCursor = 0
                 },
                 closeProductSearch(row) {
+                    if (row.is_service) return
                     window.setTimeout(() => {
                         row.searchOpen = false
                         row.searchCursor = -1
@@ -432,6 +485,7 @@
                     }, 120)
                 },
                 onProductSearchInput(row) {
+                    if (row.is_service) return
                     row.searchOpen = true
                     row.searchCursor = 0
 
@@ -453,6 +507,7 @@
                     }
                 },
                 filteredProducts(row) {
+                    if (row.is_service) return []
                     const query = String(row.search || '').trim().toLowerCase()
 
                     if (query === '') {
@@ -510,14 +565,25 @@
                     const price = Math.max(0, Number(row.unit_price ?? 0))
                     return qty * price
                 },
+                rowHasValidService(row) {
+                    return String(row?.service_name ?? '').trim() !== ''
+                },
                 rowHasValidProduct(row) {
                     return !!this.productById(row?.product_id)
                 },
                 rowIsOutOfStock(row) {
-                    if (!this.rowHasValidProduct(row)) return false
+                    if (row?.is_service || !this.rowHasValidProduct(row)) return false
                     return this.outOfStock(this.productStock(row.product_id))
                 },
                 rowProductError(row) {
+                    if (row?.is_service) {
+                        if (!this.rowHasValidService(row) && this.rows.length > 1) {
+                            return 'Enter a service name or remove this item row.'
+                        }
+
+                        return ''
+                    }
+
                     const typed = String(row?.search ?? '').trim()
                     const hasProduct = this.rowHasValidProduct(row)
 
@@ -536,12 +602,21 @@
                     return ''
                 },
                 submitBlockReasons() {
+                    const invalidServiceRows = []
                     const invalidProductRows = []
                     const unknownProductRows = []
                     const outOfStockRows = []
 
                     this.rows.forEach((row, idx) => {
                         const rowNumber = idx + 1
+
+                        if (row?.is_service) {
+                            if (!this.rowHasValidService(row)) {
+                                invalidServiceRows.push(rowNumber)
+                            }
+                            return
+                        }
+
                         const hasProduct = this.rowHasValidProduct(row)
                         const typed = String(row?.search ?? '').trim()
 
@@ -559,6 +634,10 @@
                     })
 
                     const reasons = []
+                    if (invalidServiceRows.length > 0) {
+                        reasons.push(`Enter a service name for each service row (row${invalidServiceRows.length > 1 ? 's' : ''}: ${invalidServiceRows.join(', ')}).`)
+                    }
+
                     if (invalidProductRows.length > 0) {
                         reasons.push(`Select a valid product for each row (row${invalidProductRows.length > 1 ? 's' : ''}: ${invalidProductRows.join(', ')}).`)
                     }

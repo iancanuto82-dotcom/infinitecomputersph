@@ -28,13 +28,14 @@ class ProductController extends Controller
         $stockFilter = (string) $request->query('stock', 'all');
 
         $categories = Category::query()
+            ->with('parent:id,name')
             ->orderByRaw('CASE WHEN parent_id IS NULL THEN 0 ELSE 1 END')
             ->orderBy('parent_id')
             ->orderBy('name')
             ->get();
 
         $productsQuery = Product::query()
-            ->with('category')
+            ->with(['category:id,name,parent_id', 'category.parent:id,name'])
             ->latest();
 
         if ($search !== '') {
@@ -68,7 +69,12 @@ class ProductController extends Controller
 
     public function create(Request $request)
     {
-        $categories = Category::all();
+        $categories = Category::query()
+            ->with('parent:id,name')
+            ->orderByRaw('CASE WHEN parent_id IS NULL THEN 0 ELSE 1 END')
+            ->orderBy('parent_id')
+            ->orderBy('name')
+            ->get();
         $indexQuery = $this->productIndexQuery($request);
 
         return view('admin.products.create', compact('categories', 'indexQuery'));
@@ -195,7 +201,12 @@ class ProductController extends Controller
 
     public function edit(Request $request, Product $product)
     {
-        $categories = Category::all();
+        $categories = Category::query()
+            ->with('parent:id,name')
+            ->orderByRaw('CASE WHEN parent_id IS NULL THEN 0 ELSE 1 END')
+            ->orderBy('parent_id')
+            ->orderBy('name')
+            ->get();
         $indexQuery = $this->productIndexQuery($request);
 
         return view('admin.products.edit', compact('product', 'categories', 'indexQuery'));

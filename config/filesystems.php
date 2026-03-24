@@ -53,7 +53,9 @@ return [
 
         'public' => [
             'driver' => 'local',
-            'root' => storage_path('app/public'),
+            'root' => public_path() === base_path()
+                ? public_path('storage')
+                : storage_path('app/public'),
             'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
             'visibility' => 'public',
             'throw' => false,
@@ -86,8 +88,10 @@ return [
     |
     */
 
-    'links' => [
-        public_path('storage') => storage_path('app/public'),
-    ],
+    'links' => public_path() === base_path()
+        ? []
+        : [
+            public_path('storage') => storage_path('app/public'),
+        ],
 
 ];

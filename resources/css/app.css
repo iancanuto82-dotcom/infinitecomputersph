@@ -139,10 +139,10 @@
     }
 
     .app-logo-bordered {
-        border: 1.5px solid rgba(242, 98, 37, 0.8);
-        border-radius: 0.55rem;
-        background-color: rgba(255, 255, 255, 0.08);
-        padding: 0.08rem;
+        border: 0;
+        border-radius: 0;
+        background-color: transparent;
+        padding: 0;
     }
 
     .theme-account-btn {

@@ -111,41 +111,55 @@
                 </div>
             </div>
 
-            <div class="rounded-xl bg-white shadow-sm ring-1 ring-black/10 p-6">
-                <div class="flex items-center justify-between gap-4">
+            <div x-data="{ monthlyBreakdownOpen: true }" class="rounded-xl bg-white shadow-sm ring-1 ring-black/10 p-6">
+                <button type="button"
+                    class="flex w-full items-center justify-between gap-4 text-left"
+                    :aria-expanded="monthlyBreakdownOpen ? 'true' : 'false'"
+                    @click="monthlyBreakdownOpen = !monthlyBreakdownOpen">
                     <div class="flex items-center gap-2">
                         <svg viewBox="0 0 24 24" class="h-5 w-5 text-blue-700" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4 19h16M4 5h16M6 7v10M10 9h10M10 13h10" />
                         </svg>
-                        <div class="text-base font-semibold text-gray-900">Monthly Sales Breakdown</div>
-                        <div class="text-sm text-gray-600">Last 12 months</div>
+                        <div>
+                            <div class="text-base font-semibold text-gray-900">Monthly Sales Breakdown</div>
+                            <div class="text-sm text-gray-600">Last 12 months</div>
+                        </div>
                     </div>
-                </div>
 
-                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    @forelse ($monthlyBreakdown as $row)
-                        @php($monthKey = (string) $row->month)
-                        @php($isCurrent = $monthKey === now()->format('Y-m'))
-                        <a href="{{ route('admin.sales', ['year' => substr($monthKey, 0, 4), 'month' => (int) substr($monthKey, 5, 2)]) }}"
-                            class="rounded-xl border p-4 shadow-sm {{ $isCurrent ? 'border-blue-600 ring-1 ring-blue-200 bg-blue-50/30' : 'border-black/10 bg-white hover:bg-gray-50/80' }}">
-                            <div class="flex items-start justify-between gap-3">
-                                <div>
-                                    <div class="flex items-center gap-2">
-                                        <div class="font-semibold text-gray-900">{{ \Illuminate\Support\Carbon::createFromFormat('Y-m', $monthKey)->format('F Y') }}</div>
-                                        @if ($isCurrent)
-                                            <span class="inline-flex items-center rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">Current</span>
-                                        @endif
+                    <span class="inline-flex items-center gap-2 text-sm font-medium text-gray-600">
+                        <span x-text="monthlyBreakdownOpen ? 'Hide' : 'Show'"></span>
+                        <svg viewBox="0 0 20 20" class="h-4 w-4 transition-transform duration-200" :class="monthlyBreakdownOpen ? 'rotate-180' : ''" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.51a.75.75 0 01-1.08 0l-4.25-4.51a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                        </svg>
+                    </span>
+                </button>
+
+                <div x-cloak x-show="monthlyBreakdownOpen" x-transition class="mt-4">
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        @forelse ($monthlyBreakdown as $row)
+                            @php($monthKey = (string) $row->month)
+                            @php($isCurrent = $monthKey === now()->format('Y-m'))
+                            <a href="{{ route('admin.sales', ['year' => substr($monthKey, 0, 4), 'month' => (int) substr($monthKey, 5, 2)]) }}"
+                                class="rounded-xl border p-4 shadow-sm {{ $isCurrent ? 'border-blue-600 ring-1 ring-blue-200 bg-blue-50/30' : 'border-black/10 bg-white hover:bg-gray-50/80' }}">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <div class="font-semibold text-gray-900">{{ \Illuminate\Support\Carbon::createFromFormat('Y-m', $monthKey)->format('F Y') }}</div>
+                                            @if ($isCurrent)
+                                                <span class="inline-flex items-center rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">Current</span>
+                                            @endif
+                                        </div>
+                                        <div class="mt-1 text-sm text-gray-600">{{ number_format((int) $row->sales_count) }} sale(s)</div>
                                     </div>
-                                    <div class="mt-1 text-sm text-gray-600">{{ number_format((int) $row->sales_count) }} sale(s)</div>
+                                    <div class="text-right font-semibold text-gray-900 tabular-nums">
+                                        &#8369;{{ number_format((float) $row->revenue, 2) }}
+                                    </div>
                                 </div>
-                                <div class="text-right font-semibold text-gray-900 tabular-nums">
-                                    &#8369;{{ number_format((float) $row->revenue, 2) }}
-                                </div>
-                            </div>
-                        </a>
-                    @empty
-                        <div class="text-sm text-gray-600">No sales yet.</div>
-                    @endforelse
+                            </a>
+                        @empty
+                            <div class="text-sm text-gray-600">No sales yet.</div>
+                        @endforelse
+                    </div>
                 </div>
             </div>
 

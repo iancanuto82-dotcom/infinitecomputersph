@@ -14,7 +14,7 @@ return [
     */
 
     'name' => env('APP_NAME', 'Laravel'),
-    'logo_url' => env('APP_LOGO_URL', 'https://i.imgur.com/MCfboy4.png'),
+    'logo_url' => env('APP_LOGO_URL', '/images/branding/logo-mark.png'),
 
     /*
     |--------------------------------------------------------------------------

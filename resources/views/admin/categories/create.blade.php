@@ -21,6 +21,23 @@
                         <x-input-error class="mt-2" :messages="$errors->get('name')" />
                     </div>
 
+                    <div>
+                        <label for="parent_id" class="block text-sm font-medium text-gray-900">Parent category</label>
+                        <select id="parent_id" name="parent_id"
+                            class="mt-1 block w-full rounded-md border-black/20 bg-white shadow-sm focus:border-orange-500 focus:ring-orange-500">
+                            <option value="">None (main category)</option>
+                            @foreach(($parentCategories ?? collect()) as $parentCategory)
+                                <option value="{{ $parentCategory->id }}" {{ (string) old('parent_id', $selectedParentId ?? '') === (string) $parentCategory->id ? 'selected' : '' }}>
+                                    {{ $parentCategory->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <div class="mt-1 text-xs text-gray-600">
+                            Pick a parent category here to create a subcategory.
+                        </div>
+                        <x-input-error class="mt-2" :messages="$errors->get('parent_id')" />
+                    </div>
+
                     <div class="flex flex-wrap items-center gap-3 pt-2">
                         <button type="submit"
                             class="inline-flex items-center rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
@@ -36,4 +53,3 @@
         </div>
     </div>
 </x-app-layout>
-

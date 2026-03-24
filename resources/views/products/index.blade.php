@@ -354,6 +354,33 @@
 
                         return ddrCompatible && brandCompatible;
                     },
+                    dedupeProducts(list, selectedProductId = null) {
+                        const preferredId = selectedProductId ? String(selectedProductId) : '';
+                        const unique = new Map();
+
+                        (Array.isArray(list) ? list : []).forEach((product) => {
+                            const subcategory = String(product?.subcategory || '')
+                                .trim()
+                                .toLowerCase()
+                                .replace(/\s+/g, ' ');
+                            const normalizedName = String(product?.name || '')
+                                .trim()
+                                .toLowerCase()
+                                .replace(/\s+/g, ' ');
+                            const key = `${subcategory}::${normalizedName}`;
+
+                            if (!unique.has(key)) {
+                                unique.set(key, product);
+                                return;
+                            }
+
+                            if (preferredId && String(product?.id ?? '') === preferredId) {
+                                unique.set(key, product);
+                            }
+                        });
+
+                        return Array.from(unique.values());
+                    },
                     optionGroups(category) {
                         if (!Array.isArray(category?.groups) || category.groups.length === 0) {
                             return [];
@@ -362,14 +389,20 @@
                         return category.groups
                             .map((group) => ({
                                 label: group.label,
-                                products: (Array.isArray(group.products) ? group.products : [])
-                                    .filter((product) => this.isCompatibleProduct(category.id, product)),
+                                products: this.dedupeProducts(
+                                    (Array.isArray(group.products) ? group.products : [])
+                                        .filter((product) => this.isCompatibleProduct(category.id, product)),
+                                    this.selected[category.id]
+                                ),
                             }))
                             .filter((group) => group.products.length > 0);
                     },
                     optionProducts(category) {
-                        return (Array.isArray(category?.products) ? category.products : [])
-                            .filter((product) => this.isCompatibleProduct(category.id, product));
+                        return this.dedupeProducts(
+                            (Array.isArray(category?.products) ? category.products : [])
+                                .filter((product) => this.isCompatibleProduct(category.id, product)),
+                            this.selected[category.id]
+                        );
                     },
                     onCategoryChange(categoryId) {
                         if (String(categoryId) === 'processor') {
@@ -619,7 +652,9 @@
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
                                 <h3 class="truncate text-base font-semibold text-gray-900">{{ $product->name }}</h3>
-                                <p class="theme-muted mt-1 truncate text-sm">{{ $product->category->name ?? 'Uncategorized' }}</p>
+                                <p class="theme-muted mt-1 truncate text-sm">
+                                    {{ $product->category?->parent ? $product->category->parent->name.' / '.$product->category->name : ($product->category->name ?? 'Uncategorized') }}
+                                </p>
                             </div>
 
                             <span class="theme-panel shrink-0 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium text-gray-900">

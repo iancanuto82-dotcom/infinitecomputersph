@@ -232,7 +232,7 @@
                                         {{ number_format((int) $product->stock) }}
                                     </td>
                                     <td class="px-6 py-4 text-gray-900/80">
-                                        {{ $product->category->name ?? 'Uncategorized' }}
+                                        {{ $product->category?->parent ? $product->category->parent->name.' / '.$product->category->name : ($product->category->name ?? 'Uncategorized') }}
                                     </td>
                                     <td class="px-6 py-4 text-right whitespace-nowrap">
                                         @if ($canEditProducts)

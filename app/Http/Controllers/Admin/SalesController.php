@@ -185,7 +185,9 @@ class SalesController extends Controller
             'sale_status' => ['required', 'in:processing,completed'],
             'deduct_stock' => ['nullable', 'boolean'],
             'items' => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
+            'items.*.is_service' => ['nullable', 'boolean'],
+            'items.*.product_id' => ['nullable', 'integer'],
+            'items.*.product_name' => ['nullable', 'string', 'max:255'],
             'items.*.qty' => ['required', 'integer', 'min:1'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
         ], [
@@ -194,11 +196,41 @@ class SalesController extends Controller
 
         $deductStock = (bool) ($validated['deduct_stock'] ?? true);
         $items = collect($validated['items'])->map(fn ($row) => [
-            'product_id' => (int) $row['product_id'],
+            'is_service' => (bool) ($row['is_service'] ?? false),
+            'product_id' => isset($row['product_id']) && $row['product_id'] !== '' ? (int) $row['product_id'] : null,
+            'product_name' => trim((string) ($row['product_name'] ?? '')),
             'qty' => max(1, (int) $row['qty']),
             'unit_price' => max(0, (float) $row['unit_price']),
         ])->values();
-        $productIds = $items->pluck('product_id')->unique()->values()->all();
+
+        $itemErrors = [];
+        foreach ($items as $index => $row) {
+            $rowNumber = $index + 1;
+
+            if ($row['is_service']) {
+                if ($row['product_name'] === '') {
+                    $itemErrors["items.{$index}.product_name"] = "Enter a service name for row {$rowNumber}.";
+                }
+
+                continue;
+            }
+
+            if (! $row['product_id']) {
+                $itemErrors["items.{$index}.product_id"] = "Select a valid product for row {$rowNumber}.";
+            }
+        }
+
+        if ($itemErrors !== []) {
+            throw ValidationException::withMessages($itemErrors);
+        }
+
+        $productIds = $items
+            ->where('is_service', false)
+            ->pluck('product_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
 
         return DB::transaction(function () use ($request, $validated, $deductStock, $items, $productIds, $canEditSalePrice) {
             $products = Product::query()
@@ -211,10 +243,32 @@ class SalesController extends Controller
             $saleItems = [];
             $qtyByProductId = [];
 
-            foreach ($items as $row) {
+            foreach ($items as $index => $row) {
+                if ($row['is_service']) {
+                    $unitPrice = round($row['unit_price'], 2);
+                    $lineTotal = $row['qty'] * $unitPrice;
+                    $subtotal += $lineTotal;
+
+                    $saleItems[] = [
+                        'product_id' => null,
+                        'product_name' => $row['product_name'],
+                        'unit_price' => $unitPrice,
+                        'qty' => (int) $row['qty'],
+                        'line_total' => round($lineTotal, 2),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+
+                    continue;
+                }
+
                 $product = $products->get($row['product_id']);
                 if (! $product) {
-                    continue;
+                    $rowNumber = $index + 1;
+
+                    throw ValidationException::withMessages([
+                        "items.{$index}.product_id" => "Selected product for row {$rowNumber} is no longer available.",
+                    ]);
                 }
 
                 $qtyByProductId[$row['product_id']] = ($qtyByProductId[$row['product_id']] ?? 0) + $row['qty'];

@@ -1,5 +1,8 @@
 <x-app-layout>
     @php($indexQuery = $indexQuery ?? request()->only(['search', 'category', 'stock', 'page']))
+    @php($mainCategories = collect($categories ?? [])->filter(fn ($category) => ($category->parent_id ?? null) === null)->values())
+    @php($subcategoriesByParent = collect($categories ?? [])->filter(fn ($category) => ($category->parent_id ?? null) !== null)->groupBy(fn ($category) => (int) $category->parent_id))
+    @php($orphanSubcategories = collect($categories ?? [])->filter(fn ($category) => ($category->parent_id ?? null) !== null && $category->parent === null)->values())
 
     <x-slot name="header">
         <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -95,9 +98,19 @@
                             <select id="category_id" name="category_id"
                                 class="mt-1 block w-full rounded-md border-black/20 bg-white shadow-sm focus:border-orange-500 focus:ring-orange-500">
                                 <option value="" disabled>Select…</option>
-                                @foreach($categories as $category)
+                                @foreach($mainCategories as $category)
                                     <option value="{{ $category->id }}" {{ (string) old('category_id', $product->category_id) === (string) $category->id ? 'selected' : '' }}>
                                         {{ $category->name }}
+                                    </option>
+                                    @foreach($subcategoriesByParent->get((int) $category->id, collect()) as $subcategory)
+                                        <option value="{{ $subcategory->id }}" {{ (string) old('category_id', $product->category_id) === (string) $subcategory->id ? 'selected' : '' }}>
+                                            {{ $category->name }} / {{ $subcategory->name }}
+                                        </option>
+                                    @endforeach
+                                @endforeach
+                                @foreach($orphanSubcategories as $subcategory)
+                                    <option value="{{ $subcategory->id }}" {{ (string) old('category_id', $product->category_id) === (string) $subcategory->id ? 'selected' : '' }}>
+                                        {{ $subcategory->name }}
                                     </option>
                                 @endforeach
                             </select>
