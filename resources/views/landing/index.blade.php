@@ -674,7 +674,7 @@
                                     <template x-if="bundleHasImage('entry', -1)">
                                         <img :src="bundleImage('entry', -1)" alt="Entry previous bundle"
                                             referrerpolicy="no-referrer" loading="lazy"
-                                            class="home-bundle-img h-full w-full object-cover">
+                                            class="home-bundle-img h-full w-full object-cover object-center">
                                     </template>
                                     <template x-if="!bundleHasImage('entry', -1)">
                                         <div class="flex h-full w-full items-center justify-center border border-dashed border-white/25 bg-white/10 px-2 text-center">
@@ -692,7 +692,7 @@
                                     <template x-if="bundleHasImage('entry', 0)">
                                         <img :src="bundleImage('entry', 0)" alt="Entry featured bundle"
                                             referrerpolicy="no-referrer" loading="lazy"
-                                            class="home-bundle-img h-full w-full object-cover">
+                                            class="home-bundle-img h-full w-full object-cover object-center">
                                     </template>
                                     <template x-if="!bundleHasImage('entry', 0)">
                                         <div class="flex h-full w-full flex-col items-center justify-center gap-2 border border-dashed border-white/25 bg-white/10 px-4 text-center">
@@ -712,7 +712,7 @@
                                     <template x-if="bundleHasImage('entry', 1)">
                                         <img :src="bundleImage('entry', 1)" alt="Entry next bundle"
                                             referrerpolicy="no-referrer" loading="lazy"
-                                            class="home-bundle-img h-full w-full object-cover">
+                                            class="home-bundle-img h-full w-full object-cover object-center">
                                     </template>
                                     <template x-if="!bundleHasImage('entry', 1)">
                                         <div class="flex h-full w-full items-center justify-center border border-dashed border-white/25 bg-white/10 px-2 text-center">
@@ -770,7 +770,7 @@
                                     <template x-if="bundleHasImage('gaming', -1)">
                                         <img :src="bundleImage('gaming', -1)" alt="Gaming previous bundle"
                                             referrerpolicy="no-referrer" loading="lazy"
-                                            class="home-bundle-img h-full w-full object-cover">
+                                            class="home-bundle-img h-full w-full object-cover object-center">
                                     </template>
                                     <template x-if="!bundleHasImage('gaming', -1)">
                                         <div class="flex h-full w-full items-center justify-center border border-dashed border-white/25 bg-white/10 px-2 text-center">
@@ -788,7 +788,7 @@
                                     <template x-if="bundleHasImage('gaming', 0)">
                                         <img :src="bundleImage('gaming', 0)" alt="Gaming featured bundle"
                                             referrerpolicy="no-referrer" loading="lazy"
-                                            class="home-bundle-img h-full w-full object-cover">
+                                            class="home-bundle-img h-full w-full object-cover object-center">
                                     </template>
                                     <template x-if="!bundleHasImage('gaming', 0)">
                                         <div class="flex h-full w-full flex-col items-center justify-center gap-2 border border-dashed border-white/25 bg-white/10 px-4 text-center">
@@ -808,7 +808,7 @@
                                     <template x-if="bundleHasImage('gaming', 1)">
                                         <img :src="bundleImage('gaming', 1)" alt="Gaming next bundle"
                                             referrerpolicy="no-referrer" loading="lazy"
-                                            class="home-bundle-img h-full w-full object-cover">
+                                            class="home-bundle-img h-full w-full object-cover object-center">
                                     </template>
                                     <template x-if="!bundleHasImage('gaming', 1)">
                                         <div class="flex h-full w-full items-center justify-center border border-dashed border-white/25 bg-white/10 px-2 text-center">

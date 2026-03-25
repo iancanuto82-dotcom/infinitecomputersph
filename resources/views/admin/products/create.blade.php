@@ -36,9 +36,10 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label for="image" class="block text-sm font-medium text-gray-900">Image upload</label>
+                            <label for="image" class="block text-sm font-medium text-gray-900">Main photo</label>
                             <input id="image" type="file" name="image" accept="image/*"
                                 class="mt-1 block w-full rounded-md border-black/20 bg-white text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500">
+                            <p class="mt-1 text-xs text-gray-500">Used as the cover image. You can save up to 10 photos total per product.</p>
                             <x-input-error class="mt-2" :messages="$errors->get('image')" />
                         </div>
 
@@ -48,6 +49,24 @@
                                 class="mt-1 block w-full rounded-md border-black/20 bg-white shadow-sm focus:border-orange-500 focus:ring-orange-500">
                             <x-input-error class="mt-2" :messages="$errors->get('image_url')" />
                         </div>
+                    </div>
+
+                    <div>
+                        <label for="gallery_files" class="block text-sm font-medium text-gray-900">Additional photos</label>
+                        <input id="gallery_files" type="file" name="gallery_files[]" accept="image/*" multiple
+                            class="mt-1 block w-full rounded-md border-black/20 bg-white text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500">
+                        <p class="mt-1 text-xs text-gray-500">Upload up to 9 more photos if you already have a main photo, or up to 10 if you do not.</p>
+                        <x-input-error class="mt-2" :messages="$errors->get('gallery_files')" />
+                        <x-input-error class="mt-2" :messages="$errors->get('gallery_files.*')" />
+                    </div>
+
+                    <div>
+                        <label for="gallery_urls" class="block text-sm font-medium text-gray-900">Additional photo links</label>
+                        <textarea id="gallery_urls" name="gallery_urls" rows="4"
+                            placeholder="https://example.com/photo-1.jpg&#10;https://example.com/photo-2.jpg"
+                            class="mt-1 block w-full rounded-md border-black/20 bg-white shadow-sm focus:border-orange-500 focus:ring-orange-500">{{ old('gallery_urls') }}</textarea>
+                        <p class="mt-1 text-xs text-gray-500">Paste one photo URL per line. These count toward the same 10-photo total.</p>
+                        <x-input-error class="mt-2" :messages="$errors->get('gallery_urls')" />
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">

@@ -95,7 +95,7 @@ class ProductController extends Controller
         });
 
         $productsQuery = Product::query()
-            ->select(['id', 'name', 'description', 'image_path', 'image_url', 'price', 'stock', 'category_id'])
+            ->select(['id', 'name', 'description', 'image_path', 'image_url', 'gallery_images', 'price', 'stock', 'category_id'])
             ->with(['category:id,name,parent_id', 'category.parent:id,name'])
             ->where('is_active', true);
 
@@ -123,7 +123,7 @@ class ProductController extends Controller
 
         $builderCategories = Cache::remember(PublicCatalogCache::BUILDER_CATEGORIES_KEY, now()->addMinutes(5), function () use ($categories): array {
             $builderProducts = Product::query()
-                ->select(['id', 'name', 'image_path', 'image_url', 'price', 'stock', 'category_id'])
+                ->select(['id', 'name', 'image_path', 'image_url', 'gallery_images', 'price', 'stock', 'category_id'])
                 ->with('category:id,name,parent_id')
                 ->where('is_active', true)
                 ->where('stock', '>', 0)
@@ -453,7 +453,7 @@ class ProductController extends Controller
         $product->loadMissing(['category:id,name,parent_id', 'category.parent:id,name']);
 
         $relatedProducts = Product::query()
-            ->select(['id', 'name', 'image_path', 'image_url', 'price', 'category_id'])
+            ->select(['id', 'name', 'image_path', 'image_url', 'gallery_images', 'price', 'category_id'])
             ->with(['category:id,name,parent_id', 'category.parent:id,name'])
             ->where('is_active', true)
             ->where('id', '!=', $product->id)

@@ -37,9 +37,10 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label for="image" class="block text-sm font-medium text-gray-900">Replace image</label>
+                            <label for="image" class="block text-sm font-medium text-gray-900">Replace main photo</label>
                             <input id="image" type="file" name="image" accept="image/*"
                                 class="mt-1 block w-full rounded-md border-black/20 bg-white text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500">
+                            <p class="mt-1 text-xs text-gray-500">Main photo stays the product cover image. Each product can hold up to 10 photos total.</p>
                             <x-input-error class="mt-2" :messages="$errors->get('image')" />
                         </div>
 
@@ -49,6 +50,24 @@
                                 class="mt-1 block w-full rounded-md border-black/20 bg-white shadow-sm focus:border-orange-500 focus:ring-orange-500">
                             <x-input-error class="mt-2" :messages="$errors->get('image_url')" />
                         </div>
+                    </div>
+
+                    <div>
+                        <label for="gallery_files" class="block text-sm font-medium text-gray-900">Add more photos</label>
+                        <input id="gallery_files" type="file" name="gallery_files[]" accept="image/*" multiple
+                            class="mt-1 block w-full rounded-md border-black/20 bg-white text-sm shadow-sm focus:border-orange-500 focus:ring-orange-500">
+                        <p class="mt-1 text-xs text-gray-500">Upload additional gallery photos. The total product photo count cannot exceed 10.</p>
+                        <x-input-error class="mt-2" :messages="$errors->get('gallery_files')" />
+                        <x-input-error class="mt-2" :messages="$errors->get('gallery_files.*')" />
+                    </div>
+
+                    <div>
+                        <label for="gallery_urls" class="block text-sm font-medium text-gray-900">Add photo links</label>
+                        <textarea id="gallery_urls" name="gallery_urls" rows="4"
+                            placeholder="https://example.com/photo-1.jpg&#10;https://example.com/photo-2.jpg"
+                            class="mt-1 block w-full rounded-md border-black/20 bg-white shadow-sm focus:border-orange-500 focus:ring-orange-500">{{ old('gallery_urls') }}</textarea>
+                        <p class="mt-1 text-xs text-gray-500">Paste one photo URL per line. These are added to the same gallery and count toward the 10-photo total.</p>
+                        <x-input-error class="mt-2" :messages="$errors->get('gallery_urls')" />
                     </div>
 
                     @if ($product->image_src)
@@ -61,6 +80,38 @@
                                     Remove current image
                                 </label>
                             </div>
+                        </div>
+                    @endif
+
+                    @if (count($product->stored_gallery_image_src_list) > 0)
+                        <div class="rounded-lg bg-gray-50 p-4 ring-1 ring-black/10">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="text-sm font-semibold text-gray-900">Additional photos</h3>
+                                    <p class="mt-1 text-xs text-gray-500">Select any gallery photo you want removed when you save.</p>
+                                </div>
+                                <span class="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-gray-700 ring-1 ring-black/10">
+                                    {{ count($product->stored_gallery_image_src_list) }} saved
+                                </span>
+                            </div>
+
+                            <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                                @foreach ($product->stored_gallery_image_src_list as $index => $galleryImageSrc)
+                                    @php($galleryImagePath = $product->stored_gallery_images[$index] ?? null)
+                                    @continue(! $galleryImagePath)
+                                    <label class="overflow-hidden rounded-xl bg-white p-2 ring-1 ring-black/10">
+                                        <img src="{{ $galleryImageSrc }}" alt="{{ $product->name }} photo {{ $index + 2 }}" class="h-28 w-full rounded-lg object-cover">
+                                        <span class="mt-2 inline-flex items-center gap-2 text-xs font-medium text-gray-700">
+                                            <input type="checkbox" name="remove_gallery_images[]" value="{{ $galleryImagePath }}"
+                                                {{ in_array($galleryImagePath, old('remove_gallery_images', []), true) ? 'checked' : '' }}
+                                                class="rounded border-black/30 text-gray-900 focus:ring-orange-500">
+                                            Remove this photo
+                                        </span>
+                                    </label>
+                                @endforeach
+                            </div>
+                            <x-input-error class="mt-2" :messages="$errors->get('remove_gallery_images')" />
+                            <x-input-error class="mt-2" :messages="$errors->get('remove_gallery_images.*')" />
                         </div>
                     @endif
 

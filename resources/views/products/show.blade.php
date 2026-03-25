@@ -3,6 +3,7 @@
 @section('title', $product->name)
 @php($seoDescription = \Illuminate\Support\Str::limit(trim((string) ($product->description ?: $product->name.' at Infinite Computers.')), 155))
 @php($inquiryMessage = rawurlencode('Hi! I am interested in '.$product->name.'. Is this available?'))
+@php($galleryImages = $product->gallery_image_src_list)
 @section('meta_description', $seoDescription)
 @section('og_type', 'product')
 @section('og_title', $product->name)
@@ -34,9 +35,24 @@
 
     <section class="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
         <article class="theme-card overflow-hidden rounded-3xl shadow-sm ring-1 ring-black/10">
-            @if ($product->image_src)
-                <div class="theme-image-wrap bg-gray-50/70">
-                    <img src="{{ $product->image_src }}" alt="{{ $product->name }}" class="h-72 w-full object-cover sm:h-[420px]">
+            @if (count($galleryImages) > 0)
+                <div x-data="{ images: @js($galleryImages), activeIndex: 0 }">
+                    <div class="theme-image-wrap bg-gray-50/70">
+                        <img :src="images[activeIndex]" alt="{{ $product->name }}" class="h-72 w-full object-cover sm:h-[420px]">
+                    </div>
+
+                    @if (count($galleryImages) > 1)
+                        <div class="grid grid-cols-4 gap-3 p-4 sm:grid-cols-5">
+                            @foreach ($galleryImages as $index => $galleryImage)
+                                <button type="button"
+                                    @click="activeIndex = {{ $index }}"
+                                    class="overflow-hidden rounded-2xl ring-1 transition"
+                                    :class="activeIndex === {{ $index }} ? 'ring-orange-500 shadow-sm' : 'ring-black/10 hover:ring-black/20'">
+                                    <img src="{{ $galleryImage }}" alt="{{ $product->name }} photo {{ $index + 1 }}" class="h-20 w-full object-cover">
+                                </button>
+                            @endforeach
+                        </div>
+                    @endif
                 </div>
             @else
                 <div class="theme-image-placeholder flex h-72 w-full items-center justify-center text-sm font-medium sm:h-[420px]">

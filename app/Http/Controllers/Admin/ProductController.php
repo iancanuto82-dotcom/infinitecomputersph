@@ -83,6 +83,7 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate($this->productRules());
+        $this->ensureGalleryImageLimit($request, $validated);
         $payload = $this->extractProductPayload($validated);
         $payload['name'] = trim((string) $payload['name']);
 
@@ -178,6 +179,12 @@ class ProductController extends Controller
             $payload['image_path'] = $request->file('image')->store('products', PublicMedia::diskName());
         }
 
+        $galleryImages = $this->storeGalleryUploads($request->file('gallery_files', []));
+        $galleryImages = array_values(array_merge($galleryImages, $this->galleryUrlsFromValidated($validated)));
+        if ($galleryImages !== []) {
+            $payload['gallery_images'] = $galleryImages;
+        }
+
         $product = Product::create($payload);
 
         AuditLogger::record(
@@ -215,8 +222,11 @@ class ProductController extends Controller
     public function update(Request $request, Product $product)
     {
         $validated = $request->validate($this->productRules());
+        $this->ensureGalleryImageLimit($request, $validated, $product);
         $payload = $this->extractProductPayload($validated);
         $before = $product->only(['name', 'category_id', 'price', 'cost_price', 'initial_stock', 'stock', 'is_active']);
+        $galleryImages = $product->stored_gallery_images;
+        $removedGalleryImages = $this->removedGalleryImages($validated, $product);
 
         if ($request->boolean('remove_image') && $product->image_path) {
             Storage::disk(PublicMedia::diskName())->delete($product->image_path);
@@ -230,6 +240,22 @@ class ProductController extends Controller
 
             $payload['image_path'] = $request->file('image')->store('products', PublicMedia::diskName());
         }
+
+        if ($removedGalleryImages !== []) {
+            $galleryImages = array_values(array_filter(
+                $galleryImages,
+                fn (string $image): bool => ! in_array($image, $removedGalleryImages, true)
+            ));
+            $this->deleteStoredImages($removedGalleryImages);
+        }
+
+        $uploadedGalleryImages = $this->storeGalleryUploads($request->file('gallery_files', []));
+        $galleryUrls = $this->galleryUrlsFromValidated($validated);
+        if ($uploadedGalleryImages !== [] || $galleryUrls !== []) {
+            $galleryImages = array_values(array_merge($galleryImages, $uploadedGalleryImages, $galleryUrls));
+        }
+
+        $payload['gallery_images'] = $galleryImages === [] ? null : $galleryImages;
 
         $product->update($payload);
 
@@ -261,6 +287,7 @@ class ProductController extends Controller
             'description',
             'image_path',
             'image_url',
+            'gallery_images',
             'price',
             'cost_price',
             'initial_stock',
@@ -272,6 +299,8 @@ class ProductController extends Controller
         if ($product->image_path) {
             Storage::disk(PublicMedia::diskName())->delete($product->image_path);
         }
+
+        $this->deleteStoredImages($product->stored_gallery_images);
 
         $product->delete();
 
@@ -322,6 +351,7 @@ class ProductController extends Controller
                 'description',
                 'image_path',
                 'image_url',
+                'gallery_images',
                 'price',
                 'cost_price',
                 'initial_stock',
@@ -333,6 +363,8 @@ class ProductController extends Controller
             if ($product->image_path) {
                 Storage::disk(PublicMedia::diskName())->delete($product->image_path);
             }
+
+            $this->deleteStoredImages($product->stored_gallery_images);
 
             $product->delete();
 
@@ -892,7 +924,12 @@ class ProductController extends Controller
             'description' => ['nullable', 'string'],
             'image' => ['nullable', 'image', 'max:4096'],
             'image_url' => ['nullable', 'url', 'max:2048'],
+            'gallery_files' => ['nullable', 'array', 'max:10'],
+            'gallery_files.*' => ['image', 'max:4096'],
+            'gallery_urls' => ['nullable', 'string', 'max:12000'],
             'remove_image' => ['nullable', 'boolean'],
+            'remove_gallery_images' => ['nullable', 'array'],
+            'remove_gallery_images.*' => ['string', 'max:2048'],
         ];
     }
 
@@ -914,6 +951,142 @@ class ProductController extends Controller
             'description' => $validated['description'] ?? null,
             'image_url' => isset($validated['image_url']) ? trim((string) $validated['image_url']) : null,
         ];
+    }
+
+    /**
+     * @param array<string, mixed> $validated
+     */
+    private function ensureGalleryImageLimit(Request $request, array $validated, ?Product $product = null): void
+    {
+        if ($this->finalProductImageCount($request, $validated, $product) <= 10) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'gallery_files' => 'A product can have a maximum of 10 photos total, including the main photo.',
+        ]);
+    }
+
+    /**
+     * @param array<string, mixed> $validated
+     */
+    private function finalProductImageCount(Request $request, array $validated, ?Product $product = null): int
+    {
+        $galleryImages = $product?->stored_gallery_images ?? [];
+        $removedGalleryImages = $this->removedGalleryImages($validated, $product);
+
+        if ($removedGalleryImages !== []) {
+            $galleryImages = array_values(array_filter(
+                $galleryImages,
+                fn (string $image): bool => ! in_array($image, $removedGalleryImages, true)
+            ));
+        }
+
+        $uploadedGalleryFiles = $request->file('gallery_files', []);
+        $uploadedGalleryCount = collect(is_array($uploadedGalleryFiles) ? $uploadedGalleryFiles : [$uploadedGalleryFiles])
+            ->filter()
+            ->count();
+        $galleryUrlCount = count($this->galleryUrlsFromValidated($validated));
+
+        return ($this->hasPrimaryImageAfterSave($request, $product) ? 1 : 0) + count($galleryImages) + $uploadedGalleryCount + $galleryUrlCount;
+    }
+
+    private function hasPrimaryImageAfterSave(Request $request, ?Product $product = null): bool
+    {
+        $imagePath = $product?->image_path;
+
+        if ($request->boolean('remove_image')) {
+            $imagePath = null;
+        }
+
+        if ($request->hasFile('image')) {
+            $imagePath = '__uploaded__';
+        }
+
+        $imageUrl = trim((string) $request->input('image_url', $product?->image_url ?? ''));
+
+        return trim((string) $imagePath) !== '' || $imageUrl !== '';
+    }
+
+    /**
+     * @param array<string, mixed> $validated
+     * @return array<int, string>
+     */
+    private function removedGalleryImages(array $validated, ?Product $product = null): array
+    {
+        if (! $product) {
+            return [];
+        }
+
+        $currentGalleryImages = $product->stored_gallery_images;
+        $requestedRemovals = collect((array) ($validated['remove_gallery_images'] ?? []))
+            ->map(fn ($image): string => trim((string) $image))
+            ->filter(fn (string $image): bool => $image !== '')
+            ->unique()
+            ->values()
+            ->all();
+
+        return array_values(array_intersect($currentGalleryImages, $requestedRemovals));
+    }
+
+    /**
+     * @param array<int, \Illuminate\Http\UploadedFile>|mixed $files
+     * @return array<int, string>
+     */
+    private function storeGalleryUploads($files): array
+    {
+        return collect(is_array($files) ? $files : [$files])
+            ->filter()
+            ->map(fn ($file): string => $file->store('products/gallery', PublicMedia::diskName()))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param array<string, mixed> $validated
+     * @return array<int, string>
+     */
+    private function galleryUrlsFromValidated(array $validated): array
+    {
+        $raw = trim((string) ($validated['gallery_urls'] ?? ''));
+        if ($raw === '') {
+            return [];
+        }
+
+        $urls = collect(preg_split('/\r\n|\r|\n/', $raw) ?: [])
+            ->map(fn ($url): string => trim((string) $url))
+            ->filter(fn (string $url): bool => $url !== '')
+            ->unique()
+            ->values()
+            ->all();
+
+        $invalidUrls = collect($urls)
+            ->filter(fn (string $url): bool => filter_var($url, FILTER_VALIDATE_URL) === false)
+            ->values()
+            ->all();
+
+        if ($invalidUrls !== []) {
+            throw ValidationException::withMessages([
+                'gallery_urls' => 'Every additional photo link must be a valid URL. Use one link per line.',
+            ]);
+        }
+
+        return $urls;
+    }
+
+    /**
+     * @param array<int, string> $paths
+     */
+    private function deleteStoredImages(array $paths): void
+    {
+        foreach ($paths as $path) {
+            $value = trim((string) $path);
+            if ($value === '' || preg_match('#^https?://#i', $value) === 1) {
+                continue;
+            }
+
+            Storage::disk(PublicMedia::diskName())->delete($value);
+        }
     }
 
     private function parseMoney(string $value): float
