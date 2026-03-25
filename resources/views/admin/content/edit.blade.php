@@ -184,6 +184,7 @@
                     x-show="activeTab === 'slides'"
                     x-transition.opacity.duration.150ms
                     x-data="{ visibleRows: {{ $initialSlideRows }}, maxRows: {{ $maxSlides }} }">
+                    <fieldset :disabled="activeTab !== 'slides'" class="min-w-0">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h3 class="text-base font-semibold text-gray-900">Carousel Slides</h3>
@@ -290,6 +291,7 @@
                             </div>
                         @endforeach
                     </div>
+                    </fieldset>
                 </section>
 
                 <section class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-black/10"
@@ -297,6 +299,7 @@
                     x-show="activeTab === 'brands'"
                     x-transition.opacity.duration.150ms
                     x-data="{ visibleRows: {{ $initialBrandRows }}, maxRows: {{ $maxBrands }} }">
+                    <fieldset :disabled="activeTab !== 'brands'" class="min-w-0">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h3 class="text-base font-semibold text-gray-900">Featured Brands</h3>
@@ -410,12 +413,14 @@
                             </div>
                         @endforeach
                     </div>
+                    </fieldset>
                 </section>
 
                 <section class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-black/10"
                     x-cloak
                     x-show="activeTab === 'bundles'"
                     x-transition.opacity.duration.150ms>
+                    <fieldset :disabled="activeTab !== 'bundles'" class="min-w-0">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h3 class="text-base font-semibold text-gray-900">Bundle Ads</h3>
@@ -615,6 +620,7 @@
                             </div>
                         </div>
                     </div>
+                    </fieldset>
                 </section>
 
                 <section class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-black/10"
@@ -622,6 +628,7 @@
                     x-show="activeTab === 'featured_builds'"
                     x-transition.opacity.duration.150ms
                     x-data="{ visibleRows: {{ $initialFeaturedBuildRows }}, maxRows: {{ $maxFeaturedBuilds }} }">
+                    <fieldset :disabled="activeTab !== 'featured_builds'" class="min-w-0">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h3 class="text-base font-semibold text-gray-900">Featured Builds</h3>
@@ -759,6 +766,7 @@
                             </div>
                         @endforeach
                     </div>
+                    </fieldset>
                 </section>
 
                 <section class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-black/10"
@@ -766,6 +774,7 @@
                     x-show="activeTab === 'reviews'"
                     x-transition.opacity.duration.150ms
                     x-data="{ visibleRows: {{ $initialReviewRows }}, maxRows: {{ $maxReviews }} }">
+                    <fieldset :disabled="activeTab !== 'reviews'" class="min-w-0">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h3 class="text-base font-semibold text-gray-900">Customer Reviews</h3>
@@ -867,6 +876,7 @@
                             </div>
                         @endforeach
                     </div>
+                    </fieldset>
                 </section>
 
                 <div x-cloak x-show="confirmDeleteOpen"

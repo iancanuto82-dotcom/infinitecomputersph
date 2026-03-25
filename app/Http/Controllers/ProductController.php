@@ -147,7 +147,7 @@ class ProductController extends Controller
             return collect($builderSections)
                 ->map(function (array $section) use ($builderProducts, $categories): array {
                     $sectionCategoryIds = $this->builderSectionCategoryIds($categories, (string) ($section['key'] ?? ''));
-                    $usesSubcategoryGrouping = in_array((string) ($section['key'] ?? ''), ['processor', 'motherboard', 'desktop_ram'], true);
+                    $usesSubcategoryGrouping = in_array((string) ($section['key'] ?? ''), ['processor', 'motherboard', 'desktop_ram', 'storage'], true);
 
                     $products = $builderProducts
                         ->filter(function (Product $product) use ($section, $sectionCategoryIds): bool {

@@ -1105,7 +1105,7 @@
 
                     sectionUsesSubcategories(key) {
                         const normalized = String(key || '').toLowerCase();
-                        return normalized === 'processor' || normalized === 'motherboard' || normalized === 'ram';
+                        return normalized === 'processor' || normalized === 'motherboard' || normalized === 'ram' || normalized === 'storage';
                     },
 
                     categoryIdsForSection(key) {
@@ -1114,6 +1114,7 @@
                             processor: ['processor', 'cpu'],
                             motherboard: ['motherboard', 'mobo', 'mainboard'],
                             ram: ['ram', 'memory', 'desktop ram'],
+                            storage: ['storage', 'ssd', 'hdd', 'nvme', 'm.2'],
                         };
 
                         const needles = needlesBySection[normalized] || [];
